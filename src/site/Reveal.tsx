@@ -30,6 +30,8 @@ export function Reveal({ children, className, delay = 0, as = 'div' }: RevealPro
 export interface RevealGroupProps {
   children: ReactNode
   className?: string
+  /** Anchor target, e.g. for an in-page link. */
+  id?: string
   step?: number
   delay?: number
   as?: 'div' | 'section' | 'ul'
@@ -42,6 +44,7 @@ export interface RevealGroupProps {
 export function RevealGroup({
   children,
   className,
+  id,
   step,
   delay,
   as = 'div',
@@ -49,6 +52,7 @@ export function RevealGroup({
   const Tag = motion[as]
   return (
     <Tag
+      id={id}
       className={className}
       variants={stagger(step, delay)}
       initial="hidden"

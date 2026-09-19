@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react'
-import { cn } from './cn'
 import { Label } from './Label'
 import type { LabelKind } from './Label'
-import { Surface } from './Surface'
+import { cn } from './utils'
 
 export interface StatProps {
   label: string
@@ -14,18 +13,32 @@ export interface StatProps {
   className?: string
 }
 
+/**
+ * An instrument readout: caption, figure, unit. The figure is tabular so a row
+ * of Stats lines up on the decimal point.
+ */
 export function Stat({ label, value, unit, hint, tag, className }: StatProps) {
   return (
-    <Surface radius="md" className={cn('px-6 py-5', className)}>
-      <div className="text-[13px] font-semibold tracking-wide uppercase text-ink-muted">
-        {label}
+    <div
+      className={cn(
+        'flex min-w-56 flex-col rounded-lg border border-border bg-card px-6 py-5',
+        className,
+      )}
+    >
+      <span className="micro text-muted-foreground">{label}</span>
+      <div className="mt-3 flex items-baseline gap-1.5">
+        <span
+          data-slot="stat-value"
+          className="tabular text-[40px] leading-none font-semibold tracking-[-0.02em] text-foreground"
+        >
+          {value}
+        </span>
+        {unit ? (
+          <span className="font-mono text-sm font-medium text-muted-foreground">{unit}</span>
+        ) : null}
       </div>
-      <div className="mt-2 flex items-baseline gap-1.5">
-        <span className="text-4xl font-bold text-ink tabular-nums">{value}</span>
-        {unit ? <span className="text-lg font-semibold text-ink-muted">{unit}</span> : null}
-      </div>
-      {hint ? <div className="mt-1.5 text-sm text-ink-muted">{hint}</div> : null}
-      {tag ? <Label kind={tag} className="mt-3" /> : null}
-    </Surface>
+      {hint ? <span className="mt-2 text-sm text-muted-foreground">{hint}</span> : null}
+      {tag ? <Label kind={tag} className="mt-4 self-start" /> : null}
+    </div>
   )
 }

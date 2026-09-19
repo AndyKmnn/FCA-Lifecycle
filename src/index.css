@@ -1,64 +1,64 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+/* Self-hosted: bundled by Vite, so the demo still runs with no network. */
+@import '@fontsource-variable/geist';
+@import './design/theme.css';
 
-/* Grid Smash design tokens - neumorphism, light theme only.
-   Kept in sync with src/design/tokens.ts. */
-@theme {
-  --color-surface: #e6ebf2;
-  --color-surface-sunk: #dde3ec;
-  --color-light-shadow: #ffffff;
-  --color-dark-shadow: #c3cad6;
-  --color-accent: #f5a623;
-  --color-accent-deep: #b06f00;
-  --color-ink: #0e1b3a;
-  --color-ink-muted: #47536e;
-  --color-ok: #17795e;
-  --color-warn: #a4451a;
+/*
+ * Light theme only (CLAUDE.md). Tailwind's default `dark:` variant follows the
+ * OS setting, which would half-invert shadcn components on a dark laptop. Bind
+ * it to a `.dark` class that we never set, so `dark:` rules can never fire.
+ */
+@custom-variant dark (&:is(.dark *));
 
-  --radius-nm: 16px;
-  --radius-nm-lg: 24px;
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Instrument readout: figures line up in columns, always. */
+  .tabular,
+  [data-slot='stat-value'] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1, 'cv01' 1;
+  }
 }
 
-html,
-body,
-#root {
-  height: 100%;
-}
-
-body {
-  background-color: var(--color-surface);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Neumorphic elevation. Plain CSS classes so every component uses the exact same shadow. */
 @layer components {
-  .nm-raised {
-    box-shadow:
-      8px 8px 16px var(--color-dark-shadow),
-      -8px -8px 16px var(--color-light-shadow);
+  /* Ruled-paper motif: a faint engineering grid behind hero and stage. */
+  .rule-grid {
+    background-image:
+      linear-gradient(to right, var(--rule) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--rule) 1px, transparent 1px);
+    background-size: 64px 64px;
   }
-  .nm-raised-sm {
-    box-shadow:
-      4px 4px 9px var(--color-dark-shadow),
-      -4px -4px 9px var(--color-light-shadow);
-  }
-  .nm-pressed {
-    box-shadow:
-      inset 4px 4px 9px var(--color-dark-shadow),
-      inset -4px -4px 9px var(--color-light-shadow);
-  }
-  .nm-inset {
-    box-shadow:
-      inset 7px 7px 14px var(--color-dark-shadow),
-      inset -7px -7px 14px var(--color-light-shadow);
-  }
-  .nm-flat {
-    box-shadow: none;
+
+  /* A wide-tracked micro caption, the way a spec sheet labels a field. */
+  .micro {
+    font-size: 11px;
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
   }
 }
 

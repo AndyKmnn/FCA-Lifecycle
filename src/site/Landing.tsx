@@ -1,15 +1,7 @@
+import { ArrowRight } from 'lucide-react'
 import { Fragment } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  BRAND,
-  Button,
-  Card,
-  Chip,
-  COLORS,
-  Footer,
-  Navbar,
-  Surface,
-} from '../design'
+import { BRAND, Button, Card, Chip, Footer, Navbar, Section, Surface } from '@/design'
 import { GridMotif } from './GridMotif'
 import {
   AutopilotSnippet,
@@ -23,6 +15,10 @@ import { Reveal, RevealGroup, RevealItem } from './Reveal'
  * The product website at /. Owned by the site track.
  * All copy is docs/PRODUCT.md rewritten in "you" form - see CLAUDE.md. No investor
  * material, and no figure that is not in PRODUCT.md.
+ *
+ * Styling follows docs/DESIGN_HANDOFF.md: components from @/design, no hard-coded
+ * colour, hairlines instead of shadows, and brand amber reserved for the one thing
+ * that matters on each screen - the call to action.
  */
 
 const AUDIENCE = ['Charging parks', 'Battery storage', 'Electrolysers', 'Data centres']
@@ -85,152 +81,143 @@ const FEATURES = [
   },
 ]
 
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="text-[13px] font-bold tracking-[0.14em] uppercase text-accent-deep">
-      {children}
-    </span>
-  )
-}
-
 /** The visible hand-over between two phases: this phase's output is the next one's input. */
 function HandOver() {
   return (
-    <div aria-hidden className="flex w-24 flex-col items-center justify-center gap-2.5">
-      <svg viewBox="0 0 72 22" className="w-[72px]" role="presentation">
-        <path
-          d="M3 11h50"
-          stroke={COLORS.accentDeep}
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          strokeDasharray="6 6"
-        />
-        <path d="M52 3 68 11 52 19z" fill={COLORS.accentDeep} />
+    <div aria-hidden className="flex w-20 flex-col items-center justify-center gap-2">
+      <svg viewBox="0 0 64 12" className="w-16" role="presentation">
+        <line x1={1} y1={6} x2={52} y2={6} stroke="var(--chart-axis)" strokeWidth={1} />
+        <path d="M51 2 59 6 51 10Z" fill="var(--chart-axis)" />
       </svg>
-      <span className="text-[11px] font-bold tracking-[0.1em] uppercase text-ink-muted">
-        feeds
-      </span>
+      <span className="micro text-muted-foreground">feeds</span>
     </div>
   )
 }
 
 export function Landing() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
 
-      <main className="mx-auto w-full max-w-[1560px] flex-1 px-8">
-        {/* 1 - Hero */}
-        <section className="pt-12 pb-24">
-          <Surface className="grid grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] items-center gap-12 px-14 py-14">
+      <main className="flex-1">
+        {/* 1 - Hero. Ruled-paper grid behind it, fading out - the drawing board. */}
+        <section className="relative overflow-hidden border-b border-border">
+          <div
+            aria-hidden
+            className="rule-grid pointer-events-none absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_top_left,#000_10%,transparent_70%)]"
+          />
+          <div className="relative mx-auto grid w-full max-w-[1400px] grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)] items-center gap-16 px-8 py-24">
             <Reveal>
-              <Chip tone="accent">Flexible Connection Agreements</Chip>
-              <h1 className="mt-7 text-[58px] leading-[1.04] font-bold tracking-tight text-ink">
+              <Chip>Flexible Connection Agreements</Chip>
+
+              <h1 className="mt-8 max-w-[24ch] text-[64px] leading-[1.04] font-semibold tracking-[-0.035em] text-balance text-foreground">
                 {BRAND.tagline}
               </h1>
-              <p className="mt-6 max-w-2xl text-2xl leading-snug text-ink-muted">
+
+              <p className="mt-7 max-w-[62ch] border-l-2 border-border pl-5 text-xl leading-relaxed text-muted-foreground">
                 You get connected years earlier - and we run the flexibility that made it
                 possible.
               </p>
-              <div className="mt-9 flex flex-wrap items-center gap-2.5">
+
+              <div className="mt-10 flex flex-wrap items-center gap-2">
                 {AUDIENCE.map((item) => (
                   <Chip key={item}>{item}</Chip>
                 ))}
               </div>
-              <div className="mt-10 flex items-center gap-5">
+
+              <div className="mt-12 flex items-center gap-8">
                 <Link to="/demo">
-                  <Button size="lg">Watch the demo</Button>
+                  <Button size="2xl">
+                    Watch the demo
+                    <ArrowRight />
+                  </Button>
                 </Link>
                 <a
                   href="#how-it-works"
-                  className="text-[15px] font-semibold text-ink-muted underline-offset-4 hover:text-ink hover:underline"
+                  className="text-base font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                 >
                   See how it works
                 </a>
               </div>
             </Reveal>
+
             <Reveal delay={0.12}>
               <GridMotif className="w-full" />
             </Reveal>
-          </Surface>
+          </div>
         </section>
 
-        {/* 2 - The problem */}
-        <section className="pb-24">
-          <RevealGroup>
+        <div className="mx-auto w-full max-w-[1400px] px-8">
+          {/* 2 - The problem */}
+          <RevealGroup className="py-24">
             <RevealItem>
-              <Eyebrow>Where you are today</Eyebrow>
-              <h2 className="mt-4 max-w-4xl text-[44px] leading-[1.1] font-bold tracking-tight text-ink">
-                You have spent years waiting for a grid connection.
-              </h2>
+              <Section
+                eyebrow="01 / Where you are today"
+                title="You have spent years waiting for a grid connection."
+              />
             </RevealItem>
-            <div className="mt-12 grid grid-cols-3 gap-7">
+            <div className="grid grid-cols-3 gap-6">
               {PROBLEM.map((item) => (
                 <RevealItem key={item.head} className="h-full">
-                  <Surface className="h-full px-9 py-8">
-                    <h3 className="text-2xl leading-snug font-bold text-ink">{item.head}</h3>
-                    <p className="mt-4 text-[17px] leading-relaxed text-ink-muted">{item.body}</p>
+                  <Surface className="h-full px-7 py-7">
+                    <h3 className="text-lg leading-snug font-semibold tracking-[-0.01em] text-foreground">
+                      {item.head}
+                    </h3>
+                    <p className="mt-3.5 text-base leading-relaxed text-muted-foreground">
+                      {item.body}
+                    </p>
                   </Surface>
                 </RevealItem>
               ))}
             </div>
           </RevealGroup>
-        </section>
 
-        {/* 3 - What a flexible connection is */}
-        <section className="pb-24">
-          <Reveal>
-            <Surface variant="inset" className="px-14 py-14">
-              <Eyebrow>Speed for firmness</Eyebrow>
-              <h2 className="mt-4 max-w-4xl text-[44px] leading-[1.1] font-bold tracking-tight text-ink">
-                A Flexible Connection Agreement trades firmness for speed.
-              </h2>
-              <p className="mt-5 max-w-4xl text-2xl leading-snug text-ink-muted">
-                The grid operator connects you now; in return you accept a power limit at
-                certain times.
-              </p>
-              <RevealGroup className="mt-12 grid grid-cols-3 gap-7" step={0.08}>
-                {LIMITATION_TYPES.map((type) => (
-                  <RevealItem key={type.name} className="h-full">
-                    <Surface className="h-full px-8 py-7">
-                      <Chip tone="accent">{type.name}</Chip>
-                      <p className="mt-4 text-[17px] leading-relaxed text-ink-muted">
-                        {type.body}
-                      </p>
-                    </Surface>
-                  </RevealItem>
-                ))}
-              </RevealGroup>
-            </Surface>
-          </Reveal>
-        </section>
-
-        {/* 4 - How it works */}
-        <section id="how-it-works" className="scroll-mt-8 pb-24">
-          <RevealGroup>
+          {/* 3 - What a flexible connection is */}
+          <RevealGroup className="border-t border-border py-24">
             <RevealItem>
-              <Eyebrow>How it works</Eyebrow>
-              <h2 className="mt-4 max-w-4xl text-[44px] leading-[1.1] font-bold tracking-tight text-ink">
-                Four phases. Each phase hands its output to the next.
-              </h2>
+              <Section
+                eyebrow="02 / Speed for firmness"
+                title="A Flexible Connection Agreement trades firmness for speed."
+              >
+                <p className="max-w-[70ch] text-xl leading-relaxed text-muted-foreground">
+                  The grid operator connects you now; in return you accept a power limit at
+                  certain times.
+                </p>
+              </Section>
             </RevealItem>
-            <div className="mt-12 flex items-stretch">
+            <div className="mt-10 grid grid-cols-3 gap-6">
+              {LIMITATION_TYPES.map((type) => (
+                <RevealItem key={type.name} className="h-full">
+                  <Surface className="h-full px-7 py-7">
+                    <Chip>{type.name}</Chip>
+                    <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+                      {type.body}
+                    </p>
+                  </Surface>
+                </RevealItem>
+              ))}
+            </div>
+          </RevealGroup>
+
+          {/* 4 - How it works */}
+          <RevealGroup id="how-it-works" className="scroll-mt-8 border-t border-border py-24">
+            <RevealItem>
+              <Section
+                eyebrow="03 / How it works"
+                title="Four phases. Each phase hands its output to the next."
+              />
+            </RevealItem>
+            <div className="flex items-stretch">
               {PHASES.map((phase, i) => (
                 <Fragment key={phase.name}>
                   <RevealItem className="flex min-w-0 flex-1">
                     <Card
                       className="min-w-0 flex-1"
                       title={phase.name}
-                      badge={
-                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-base font-bold text-ink">
-                          {i + 1}
-                        </span>
-                      }
+                      badge={<span className="micro tabular text-muted-foreground">0{i + 1}</span>}
                     >
-                      <div className="text-[13px] font-bold tracking-[0.1em] uppercase text-ink-muted">
-                        What you get
-                      </div>
-                      <p className="mt-3 text-[17px] leading-relaxed text-ink">{phase.get}</p>
+                      <div className="micro text-muted-foreground">What you get</div>
+                      <p className="mt-3 text-base leading-relaxed text-foreground">{phase.get}</p>
                     </Card>
                   </RevealItem>
                   {i < PHASES.length - 1 ? (
@@ -242,57 +229,62 @@ export function Landing() {
               ))}
             </div>
           </RevealGroup>
-        </section>
 
-        {/* 5 - What it does */}
-        <section className="pb-24">
-          <RevealGroup>
+          {/* 5 - What it does */}
+          <RevealGroup className="border-t border-border py-24">
             <RevealItem>
-              <Eyebrow>What it does</Eyebrow>
-              <h2 className="mt-4 max-w-4xl text-[44px] leading-[1.1] font-bold tracking-tight text-ink">
-                From choosing a node to living with the cap.
-              </h2>
+              <Section
+                eyebrow="04 / What it does"
+                title="From choosing a node to living with the cap."
+              />
             </RevealItem>
-            <div className="mt-12 grid grid-cols-3 gap-7">
+            <div className="grid grid-cols-3 gap-6">
               {FEATURES.map((feature) => (
                 <RevealItem key={feature.title} className="h-full">
                   <Card
                     className="h-full"
                     title={feature.title}
                     footer={
-                      <div className="flex flex-col gap-4">
+                      <div className="flex w-full flex-col gap-3">
                         {feature.snippet}
                         <IllustrationTag className="self-start" />
                       </div>
                     }
                   >
-                    <p className="text-[17px] leading-relaxed text-ink-muted">{feature.body}</p>
+                    <p className="text-base leading-relaxed text-muted-foreground">
+                      {feature.body}
+                    </p>
                   </Card>
                 </RevealItem>
               ))}
             </div>
           </RevealGroup>
-        </section>
+        </div>
 
         {/* 6 - Closing call to action */}
-        <section className="pb-20">
-          <Reveal>
-            <Surface className="flex items-center justify-between gap-12 px-14 py-14">
-              <div>
-                <h2 className="max-w-3xl text-[40px] leading-[1.12] font-bold tracking-tight text-ink">
-                  Your time-to-power drops by years, and you know the cost of the cap before you
-                  sign.
-                </h2>
-                <p className="mt-5 max-w-2xl text-xl text-ink-muted">
-                  Follow the journey end to end: where you can connect, on what terms, and what
-                  living with the cap looks like.
-                </p>
+        <section className="border-t border-border">
+          <div className="mx-auto w-full max-w-[1400px] px-8 py-24">
+            <Reveal>
+              <div className="flex items-end justify-between gap-16">
+                <div>
+                  <h2 className="max-w-[34ch] text-[40px] leading-[1.1] font-semibold tracking-[-0.03em] text-balance text-foreground">
+                    Your time-to-power drops by years, and you know the cost of the cap before you
+                    sign.
+                  </h2>
+                  <p className="mt-6 max-w-[62ch] text-xl leading-relaxed text-muted-foreground">
+                    Follow the journey end to end: where you can connect, on what terms, and what
+                    living with the cap looks like.
+                  </p>
+                </div>
+                <Link to="/demo" className="shrink-0">
+                  <Button size="2xl">
+                    Watch the demo
+                    <ArrowRight />
+                  </Button>
+                </Link>
               </div>
-              <Link to="/demo" className="shrink-0">
-                <Button size="lg">Watch the demo</Button>
-              </Link>
-            </Surface>
-          </Reveal>
+            </Reveal>
+          </div>
         </section>
       </main>
 

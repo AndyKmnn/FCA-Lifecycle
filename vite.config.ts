@@ -5,4 +5,7 @@ import { defineConfig } from 'vite'
 // Demo build: everything is bundled or served from /public so the site runs offline.
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: { '@': new URL('./src', import.meta.url).pathname },
+  },
 })

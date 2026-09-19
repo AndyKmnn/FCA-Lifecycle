@@ -1,4 +1,4 @@
-import { cn } from './cn'
+import { cn } from './utils'
 
 export interface StepperProps {
   steps: readonly string[]
@@ -7,46 +7,52 @@ export interface StepperProps {
   className?: string
 }
 
-/** Scene indicator: 1 - 2 - 3. */
+/**
+ * Scene indicator. A measuring scale: numbered ticks joined by a hairline,
+ * the live one filled amber.
+ */
 export function Stepper({ steps, current, onSelect, className }: StepperProps) {
   return (
-    <ol className={cn('flex items-center gap-3', className)} aria-label="Demo scenes">
+    <ol className={cn('flex items-center', className)} aria-label="Demo scenes">
       {steps.map((step, i) => {
         const active = i === current
         const done = i < current
         return (
-          <li key={step} className="flex items-center gap-3">
+          <li key={step} className="flex items-center">
             <button
               type="button"
               disabled={!onSelect}
               aria-current={active ? 'step' : undefined}
               onClick={() => onSelect?.(i)}
               className={cn(
-                'flex items-center gap-2.5 rounded-full px-4 py-2 transition-all duration-200',
-                'outline-none focus-visible:ring-2 focus-visible:ring-ink',
-                active ? 'nm-pressed bg-surface-sunk' : 'nm-raised-sm bg-surface',
-                !onSelect && 'cursor-default',
+                'group flex items-center gap-2.5 rounded-md px-2.5 py-1.5 transition-colors',
+                'outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                onSelect ? 'hover:bg-muted' : 'cursor-default',
               )}
             >
               <span
                 className={cn(
-                  'flex h-6 w-6 items-center justify-center rounded-full text-[13px] font-bold',
-                  active || done ? 'bg-accent text-ink' : 'bg-surface-sunk text-ink-muted',
+                  'flex size-6 items-center justify-center rounded-sm border text-[12px] font-semibold tabular',
+                  active
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : done
+                      ? 'border-foreground/25 bg-foreground/5 text-foreground'
+                      : 'border-border bg-card text-muted-foreground',
                 )}
               >
                 {i + 1}
               </span>
               <span
                 className={cn(
-                  'text-[13px] font-semibold',
-                  active ? 'text-ink' : 'text-ink-muted',
+                  'text-[13px] font-medium whitespace-nowrap transition-colors',
+                  active ? 'text-foreground' : 'text-muted-foreground',
                 )}
               >
                 {step}
               </span>
             </button>
             {i < steps.length - 1 ? (
-              <span aria-hidden className="h-px w-5 bg-dark-shadow" />
+              <span aria-hidden className="mx-1 h-px w-6 bg-border" />
             ) : null}
           </li>
         )

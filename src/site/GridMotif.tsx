@@ -1,29 +1,33 @@
 import { motion } from 'framer-motion'
-import { CHART, COLORS } from '../design'
+import { CHART } from '@/design'
 import { EASE } from './motion'
 
 /**
- * Decorative grid-node motif for the hero. Purely illustrative - it carries no figures.
- * Every coordinate and delay is a literal, so the animation is identical on every run.
+ * Decorative grid-node motif for the hero, drawn as an engineering diagram:
+ * hairline edges, hollow nodes, no glow and no gradient (see docs/DESIGN_HANDOFF.md).
+ * It carries no figures. Every coordinate and delay is a literal, so the animation
+ * is identical on every run.
+ *
+ * Deliberately monochrome: the hero's one amber thing is the call to action.
  */
 
 const W = 720
-const H = 540
+const H = 520
 
 type Node = { id: string; x: number; y: number }
 
 const NODES: readonly Node[] = [
-  { id: 'a', x: 96, y: 118 },
-  { id: 'b', x: 250, y: 66 },
-  { id: 'c', x: 412, y: 134 },
-  { id: 'd', x: 596, y: 96 },
-  { id: 'e', x: 158, y: 268 },
-  { id: 'f', x: 336, y: 236 },
-  { id: 'g', x: 524, y: 268 },
-  { id: 'h', x: 652, y: 392 },
-  { id: 'i', x: 110, y: 426 },
-  { id: 'j', x: 286, y: 452 },
-  { id: 'k', x: 466, y: 406 },
+  { id: 'a', x: 96, y: 112 },
+  { id: 'b', x: 250, y: 62 },
+  { id: 'c', x: 412, y: 128 },
+  { id: 'd', x: 596, y: 92 },
+  { id: 'e', x: 158, y: 258 },
+  { id: 'f', x: 336, y: 228 },
+  { id: 'g', x: 524, y: 258 },
+  { id: 'h', x: 652, y: 378 },
+  { id: 'i', x: 110, y: 410 },
+  { id: 'j', x: 286, y: 436 },
+  { id: 'k', x: 466, y: 392 },
 ]
 
 const AT = Object.fromEntries(NODES.map((n) => [n.id, n])) as Record<string, Node>
@@ -70,16 +74,13 @@ export function GridMotif({ className }: { className?: string }) {
       role="img"
       aria-label="Abstract network of grid nodes"
     >
-      <defs>
-        <radialGradient id="gm-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor={COLORS.accent} stopOpacity="0.30" />
-          <stop offset="100%" stopColor={COLORS.accent} stopOpacity="0" />
-        </radialGradient>
-      </defs>
+      {/* Sight lines through the site node, the way a drawing marks a datum. */}
+      <g stroke={CHART.grid} strokeWidth={1} strokeDasharray="3 7">
+        <line x1={0} y1={SITE.y} x2={W} y2={SITE.y} />
+        <line x1={SITE.x} y1={0} x2={SITE.x} y2={H} />
+      </g>
 
-      <circle cx={SITE.x} cy={SITE.y} r={196} fill="url(#gm-glow)" />
-
-      <g stroke={CHART.grid} strokeWidth={1.75} strokeLinecap="round" fill="none">
+      <g stroke={CHART.grid} strokeWidth={1} strokeLinecap="round" fill="none">
         {EDGES.map(([from, to], i) => (
           <motion.line
             key={`${from}-${to}`}
@@ -107,20 +108,30 @@ export function GridMotif({ className }: { className?: string }) {
             <circle
               cx={node.x}
               cy={node.y}
-              r={isSite ? 13 : 7}
-              fill={isSite ? COLORS.accent : COLORS.surface}
-              stroke={isSite ? COLORS.accentDeep : CHART.muted}
-              strokeWidth={isSite ? 2.5 : 1.75}
+              r={isSite ? 9 : 4.5}
+              fill={isSite ? CHART.series : 'var(--background)'}
+              stroke={isSite ? CHART.series : CHART.muted}
+              strokeWidth={1.25}
             />
+            {isSite ? (
+              <circle
+                cx={node.x}
+                cy={node.y}
+                r={17}
+                fill="none"
+                stroke={CHART.muted}
+                strokeWidth={1}
+              />
+            ) : null}
             <motion.circle
               cx={node.x}
               cy={node.y}
-              r={isSite ? 13 : 7}
+              r={isSite ? 17 : 4.5}
               fill="none"
-              stroke={isSite ? COLORS.accentDeep : CHART.muted}
-              strokeWidth={1.5}
+              stroke={CHART.muted}
+              strokeWidth={1}
               initial={{ opacity: 0 }}
-              animate={{ scale: [1, 2.5], opacity: [0.45, 0] }}
+              animate={{ scale: [1, isSite ? 2 : 3], opacity: [0.5, 0] }}
               transition={{
                 duration: isSite ? 2.6 : 3.2,
                 ease: 'easeOut',
@@ -142,8 +153,8 @@ export function GridMotif({ className }: { className?: string }) {
             key={`${flow.from}-${flow.to}-flow`}
             cx={from.x}
             cy={from.y}
-            r={4.5}
-            fill={COLORS.accentDeep}
+            r={3}
+            fill={CHART.series}
             initial={{ opacity: 0 }}
             animate={{
               x: [0, to.x - from.x],

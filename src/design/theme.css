@@ -1,0 +1,123 @@
+/* =============================================================================
+   Grid Smash - the single source of truth for colour, radius and type.
+   Edit THIS file to restyle the whole site. Nothing else hard-codes a colour.
+
+   Two layers:
+     1. :root        - the palette. Change these.
+     2. @theme inline - plumbing that hands the palette to Tailwind and shadcn.
+                        You should not need to touch it.
+
+   Light theme only (the demo runs on a 1920x1080 projector).
+   ============================================================================= */
+
+:root {
+  /* --- 1a. Brand -----------------------------------------------------------
+     The two colours that make it Grid Smash. Change --brand-amber and every
+     button, focus ring, chart accent and active state follows. */
+  --brand-amber: #f5a623;
+  --brand-navy: #0e1b3a;
+
+  /* --- 1b. Cool grey ramp -------------------------------------------------- */
+  --grey-00: #ffffff;
+  --grey-05: #f8f9fb;
+  --grey-10: #f1f3f7;
+  --grey-20: #e4e8ef;
+  --grey-30: #d2d8e3;
+  --grey-50: #8a93a8;
+  --grey-70: #545e76;
+  --grey-90: #1e2a47;
+
+  /* --- 1c. Signal colours --------------------------------------------------
+     Used for meaning, never for decoration. */
+  --signal-ok: #12705a;
+  --signal-warn: #a64b00;
+  --signal-risk: #b3261e;
+
+  /* --- 1d. shadcn semantic tokens ------------------------------------------
+     Every shadcn component reads from these. */
+  --background: var(--grey-00);
+  --foreground: var(--brand-navy);
+
+  --card: var(--grey-00);
+  --card-foreground: var(--brand-navy);
+  --popover: var(--grey-00);
+  --popover-foreground: var(--brand-navy);
+
+  --primary: var(--brand-amber);
+  --primary-foreground: var(--brand-navy); /* navy on amber = 7.0:1 */
+
+  --secondary: var(--grey-10);
+  --secondary-foreground: var(--brand-navy);
+
+  --muted: var(--grey-05);
+  --muted-foreground: var(--grey-70); /* 5.9:1 on white */
+
+  --accent: var(--grey-10);
+  --accent-foreground: var(--brand-navy);
+
+  --destructive: var(--signal-risk);
+  --destructive-foreground: var(--grey-00);
+
+  --border: var(--grey-20);
+  --input: var(--grey-20);
+  --ring: var(--brand-amber);
+
+  /* --- 1e. Charts ----------------------------------------------------------
+     Charts stay flat: no shadows, no gradients, hairline axes. */
+  --chart-1: var(--brand-navy);
+  --chart-2: var(--brand-amber);
+  --chart-3: var(--grey-50);
+  --chart-4: var(--signal-ok);
+  --chart-5: var(--signal-warn);
+  --chart-grid: var(--grey-20);
+  --chart-axis: var(--grey-70);
+
+  /* --- 1f. Geometry --------------------------------------------------------
+     Restrained radii. Precision instruments are not pill-shaped. */
+  --radius: 0.5rem;
+
+  /* Hairline rule used for the ruled-paper motif. */
+  --rule: var(--grey-20);
+}
+
+/* --- 2. Plumbing. Hands the palette to Tailwind utilities. ----------------- */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-ok: var(--signal-ok);
+  --color-warn: var(--signal-warn);
+  --color-rule: var(--rule);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+}

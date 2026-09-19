@@ -1,11 +1,12 @@
 import { BRAND } from './brand'
+import { Wordmark } from './Wordmark'
 
 export function Footer() {
   return (
-    <footer className="w-full px-8 pb-8">
-      <div className="mx-auto flex max-w-[1560px] flex-wrap items-center justify-between gap-3 border-t border-dark-shadow/70 pt-6">
-        <span className="text-sm font-semibold text-ink">{BRAND.name}</span>
-        <span className="text-sm text-ink-muted">{BRAND.demoNotice}</span>
+    <footer className="w-full border-t border-border">
+      <div className="mx-auto flex w-full max-w-[1400px] flex-wrap items-center justify-between gap-4 px-8 py-8">
+        <Wordmark />
+        <span className="text-sm text-muted-foreground">{BRAND.demoNotice}</span>
       </div>
     </footer>
   )
