@@ -129,7 +129,7 @@ function FootNote({ plan }: { plan: YearPlan }) {
           The greedy rule cannot hold the cap on{' '}
           {plan.infeasible.map((d) => d.date).join(', ')}: short by{' '}
           {plan.infeasible.map((d) => `${d.deficitMwh.toFixed(2)} MWh`).join(', ')} after a full
-          battery and a {Math.round(MAX_SLOWDOWN * 100)}% slowdown.
+          battery and a {+(MAX_SLOWDOWN * 100).toFixed(1)}% slowdown.
         </span>
       </div>
     </Surface>

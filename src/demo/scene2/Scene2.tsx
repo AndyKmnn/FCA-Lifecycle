@@ -62,7 +62,7 @@ export default function Scene2({ onAdvance }: SceneProps) {
     }
   }, [])
 
-  const stage = useTimeline(MARKS, 'scene2')
+  const stage = useTimeline(MARKS, 'scene2', data !== null)
 
   /** Read once, before this run marks the scene as played. */
   const [instant] = useState(() => hasPlayed('scene2'))

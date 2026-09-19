@@ -24,10 +24,20 @@ export function resetTimelines() {
  *
  * Pass `key` to opt into the replay-instantly-on-return behaviour above.
  */
-export function useTimeline(marks: readonly number[], key?: string): number {
+export function useTimeline(
+  marks: readonly number[],
+  key?: string,
+  /**
+   * Hold the clock until the scene has what it needs. The upload bar starts
+   * when its data arrives, so starting the marks at mount instead would let
+   * "Uploaded" land before the bar had filled.
+   */
+  enabled = true,
+): number {
   const [stage, setStage] = useState(() => (key && played.has(key) ? marks.length : 0))
 
   useEffect(() => {
+    if (!enabled) return
     if (key && played.has(key)) return
     const timers = marks.map((at, i) => window.setTimeout(() => setStage(i + 1), at))
     if (key) {
@@ -36,7 +46,7 @@ export function useTimeline(marks: readonly number[], key?: string): number {
       )
     }
     return () => timers.forEach(window.clearTimeout)
-  }, [marks, key])
+  }, [marks, key, enabled])
 
   return stage
 }

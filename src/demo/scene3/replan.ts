@@ -205,7 +205,7 @@ export function planYear(profile: Profile, limits: Limits): YearPlan {
     const reserved = constrained[d] || (d + 1 < DAYS_PER_YEAR && constrained[d + 1])
 
     /** Only slowed as much as this day actually needs - zero on most days. */
-    const share = slowdownForDay(requested, cap, battPowerMw, battEnergyMwh)
+    const share = constrained[d] ? slowdownForDay(requested, cap, battPowerMw, battEnergyMwh) : 0
 
     const delivered = new Array<number>(STEPS_PER_DAY)
     const grid = new Array<number>(STEPS_PER_DAY)

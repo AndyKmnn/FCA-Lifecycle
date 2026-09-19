@@ -50,7 +50,7 @@ export default function Scene1({ onAdvance }: SceneProps) {
     }
   }, [])
 
-  const stage = useTimeline(MARKS, 'scene1')
+  const stage = useTimeline(MARKS, 'scene1', data !== null)
 
   if (!data) return <div className="h-full w-full" />
 
