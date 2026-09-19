@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "label": "Proxy estimate",
+    "note": "Illustrative proxy headroom score per German federal state. Not measured capacity.",
+    "scale": "0 = no headroom, 100 = most headroom",
+    "year": 2026
+  },
+  "site": {
+    "name": "Autohof Hallertau",
+    "state": "BY",
+    "stateName": "Bavaria",
+    "motorway": "A9",
+    "lon": 11.7,
+    "lat": 48.6,
+    "requestedMw": 6
+  },
+  "regions": [
+    {
+      "code": "BY",
+      "name": "Bavaria",
+      "headroomScore": 87,
+      "lon": 11.4,
+      "lat": 48.9
+    },
+    {
+      "code": "BW",
+      "name": "Baden-Wuerttemberg",
+      "headroomScore": 71,
+      "lon": 9.1,
+      "lat": 48.6
+    },
+    {
+      "code": "HE",
+      "name": "Hesse",
+      "headroomScore": 63,
+      "lon": 9,
+      "lat": 50.6
+    },
+    {
+      "code": "RP",
+      "name": "Rhineland-Palatinate",
+      "headroomScore": 68,
+      "lon": 7.4,
+      "lat": 49.9
+    },
+    {
+      "code": "SL",
+      "name": "Saarland",
+      "headroomScore": 55,
+      "lon": 6.9,
+      "lat": 49.4
+    },
+    {
+      "code": "NW",
+      "name": "North Rhine-Westphalia",
+      "headroomScore": 41,
+      "lon": 7.4,
+      "lat": 51.4
+    },
+    {
+      "code": "NI",
+      "name": "Lower Saxony",
+      "headroomScore": 58,
+      "lon": 9.2,
+      "lat": 52.8
+    },
+    {
+      "code": "SH",
+      "name": "Schleswig-Holstein",
+      "headroomScore": 44,
+      "lon": 9.7,
+      "lat": 54.2
+    },
+    {
+      "code": "HH",
+      "name": "Hamburg",
+      "headroomScore": 33,
+      "lon": 10,
+      "lat": 53.6
+    },
+    {
+      "code": "HB",
+      "name": "Bremen",
+      "headroomScore": 36,
+      "lon": 8.8,
+      "lat": 53.1
+    },
+    {
+      "code": "MV",
+      "name": "Mecklenburg-Vorpommern",
+      "headroomScore": 49,
+      "lon": 12.4,
+      "lat": 53.7
+    },
+    {
+      "code": "BB",
+      "name": "Brandenburg",
+      "headroomScore": 52,
+      "lon": 13.3,
+      "lat": 52.4
+    },
+    {
+      "code": "BE",
+      "name": "Berlin",
+      "headroomScore": 29,
+      "lon": 13.4,
+      "lat": 52.5
+    },
+    {
+      "code": "ST",
+      "name": "Saxony-Anhalt",
+      "headroomScore": 57,
+      "lon": 11.7,
+      "lat": 51.9
+    },
+    {
+      "code": "TH",
+      "name": "Thuringia",
+      "headroomScore": 61,
+      "lon": 11,
+      "lat": 50.9
+    },
+    {
+      "code": "SN",
+      "name": "Saxony",
+      "headroomScore": 54,
+      "lon": 13.4,
+      "lat": 51
+    }
+  ]
+}
