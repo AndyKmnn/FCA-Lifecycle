@@ -1,6 +1,6 @@
 import { animate } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { cn } from './cn'
+import { cn } from './utils'
 
 export interface CounterProps {
   value: number
@@ -26,7 +26,7 @@ export function Counter({
   useEffect(() => {
     const controls = animate(0, value, {
       duration,
-      ease: 'easeOut',
+      ease: [0.16, 1, 0.3, 1],
       onUpdate: (v) => setShown(v),
     })
     return () => controls.stop()
@@ -38,7 +38,7 @@ export function Counter({
   })
 
   return (
-    <span className={cn('tabular-nums', className)}>
+    <span className={cn('tabular', className)} data-slot="stat-value">
       {prefix}
       {text}
       {suffix}

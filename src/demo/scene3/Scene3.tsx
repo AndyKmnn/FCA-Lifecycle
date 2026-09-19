@@ -11,22 +11,27 @@ import type { SceneProps } from '../../shell/types'
  */
 export default function Scene3({ onRestart }: SceneProps) {
   return (
-    <Surface className="flex h-full w-full flex-col items-center justify-center gap-6 p-16">
-      <Label kind="simulation" />
-      <h2 className="text-5xl font-bold text-ink">Scene 3 - Autopilot replay</h2>
-      <p className="max-w-2xl text-center text-xl text-ink-muted">
-        Placeholder. Day-ahead limits arrive, the schedule re-plans, counters land on 40 months
-        skipped and breaches 0.
-      </p>
-      <div className="flex items-center gap-3">
-        <Button size="lg" onClick={onRestart}>
-          Replay
-        </Button>
-        <Link to="/">
-          <Button size="lg" variant="secondary">
-            Back to site
+    <Surface className="relative flex h-full w-full flex-col items-center justify-center gap-7 overflow-hidden p-16">
+      <div aria-hidden className="rule-grid pointer-events-none absolute inset-0 opacity-40" />
+      <div className="relative flex flex-col items-center gap-7">
+        <Label kind="simulation" />
+        <h2 className="text-[52px] leading-none font-semibold tracking-[-0.03em] text-foreground">
+          Scene 3 - Autopilot replay
+        </h2>
+        <p className="max-w-[60ch] text-center text-xl leading-relaxed text-muted-foreground">
+          Placeholder. Day-ahead limits arrive, the schedule re-plans, counters land on 40 months
+          skipped and breaches 0.
+        </p>
+        <div className="flex items-center gap-3">
+          <Button size="2xl" onClick={onRestart}>
+            Replay
           </Button>
-        </Link>
+          <Link to="/">
+            <Button size="2xl" variant="outline">
+              Back to site
+            </Button>
+          </Link>
+        </div>
       </div>
     </Surface>
   )

@@ -1,26 +1,22 @@
 import { NavLink } from 'react-router-dom'
-import { BRAND } from './brand'
-import { cn } from './cn'
-import { Surface } from './Surface'
+import { Wordmark } from './Wordmark'
+import { cn } from './utils'
 
 const LINKS = [
   { to: '/', label: 'Product', end: true },
   { to: '/demo', label: 'Demo', end: false },
 ] as const
 
+/** Sticky, hairline-ruled, glass. Nothing in it that is not a destination. */
 export function Navbar() {
   return (
-    <header className="w-full px-8 pt-6">
-      <Surface className="mx-auto flex max-w-[1560px] items-center justify-between px-7 py-4">
-        <NavLink to="/" className="flex items-center gap-3">
-          <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-ink">
-            <svg viewBox="0 0 32 32" className="h-5 w-5" aria-hidden>
-              <path d="M18.5 4 9 18h6l-1.5 10L23 14h-6l1.5-10z" fill="#F5A623" />
-            </svg>
-          </span>
-          <span className="text-lg font-bold tracking-tight text-ink">{BRAND.name}</span>
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
+      <div className="mx-auto flex h-16 w-full max-w-[1400px] items-center justify-between px-8">
+        <NavLink to="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+          <Wordmark />
         </NavLink>
-        <nav className="flex items-center gap-2">
+
+        <nav className="flex items-center gap-1">
           {LINKS.map((link) => (
             <NavLink
               key={link.to}
@@ -28,16 +24,29 @@ export function Navbar() {
               end={link.end}
               className={({ isActive }) =>
                 cn(
-                  'rounded-[14px] px-4 py-2 text-[15px] font-semibold transition-all duration-150',
-                  isActive ? 'nm-pressed text-ink' : 'text-ink-muted hover:text-ink',
+                  'relative rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                  'outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                  isActive
+                    ? 'text-foreground'
+                    : 'text-muted-foreground hover:text-foreground',
                 )
               }
             >
-              {link.label}
+              {({ isActive }) => (
+                <>
+                  {link.label}
+                  {isActive ? (
+                    <span
+                      aria-hidden
+                      className="absolute inset-x-3 -bottom-[13px] h-[2px] bg-foreground"
+                    />
+                  ) : null}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
-      </Surface>
+      </div>
     </header>
   )
 }

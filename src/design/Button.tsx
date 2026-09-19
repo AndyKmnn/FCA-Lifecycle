@@ -1,49 +1,18 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import { cn } from './cn'
+import type { ComponentProps } from 'react'
+import { Button as UIButton } from './ui/button'
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost'
-export type ButtonSize = 'md' | 'lg'
+type UIButtonProps = ComponentProps<typeof UIButton>
 
-const VARIANT: Record<ButtonVariant, string> = {
-  // Navy on amber is ~7:1 contrast.
-  primary: 'bg-accent text-ink nm-raised-sm hover:brightness-[1.04] active:nm-pressed',
-  secondary: 'bg-surface text-ink nm-raised-sm hover:brightness-[1.02] active:nm-pressed',
-  ghost: 'bg-transparent text-ink-muted hover:text-ink nm-flat',
-}
+/** Legacy alias kept so older call sites using variant="primary" still work. */
+export type ButtonVariant = NonNullable<UIButtonProps['variant']> | 'primary'
+export type ButtonSize = NonNullable<UIButtonProps['size']>
 
-const SIZE: Record<ButtonSize, string> = {
-  md: 'px-5 py-2.5 text-[15px] rounded-[16px]',
-  lg: 'px-8 py-4 text-lg rounded-[20px]',
-}
-
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends Omit<UIButtonProps, 'variant'> {
   variant?: ButtonVariant
-  size?: ButtonSize
-  children?: ReactNode
 }
 
-export function Button({
-  variant = 'primary',
-  size = 'md',
-  className,
-  children,
-  ...rest
-}: ButtonProps) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        'inline-flex items-center justify-center gap-2 font-semibold',
-        'transition-[filter,box-shadow] duration-150 outline-none',
-        'focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
-        'disabled:opacity-50 disabled:pointer-events-none',
-        VARIANT[variant],
-        SIZE[size],
-        className,
-      )}
-      {...rest}
-    >
-      {children}
-    </button>
-  )
+export function Button({ variant = 'default', ...rest }: ButtonProps) {
+  return <UIButton variant={variant === 'primary' ? 'default' : variant} {...rest} />
 }
+
+export { buttonVariants } from './ui/button'

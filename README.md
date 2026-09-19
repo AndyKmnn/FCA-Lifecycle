@@ -20,7 +20,7 @@ npm run preview
 |---|---|
 | `/` | Landing page |
 | `/demo` | Presenter view, full screen, 1920x1080. Right arrow / space: next, left arrow: back, `R`: restart |
-| `/design` | Component gallery (internal) |
+| `/design` | Component gallery and live palette (internal) |
 
 ## Layout
 
@@ -28,7 +28,7 @@ npm run preview
 docs/          PRODUCT.md (all site copy) and DEMO_SCRIPT.md (all demo numbers)
 scripts/       generate-data.mjs - the one seeded generator
 public/data/   profile.json, limits.json, regions.json
-src/design/    neumorphic design system, brand.ts holds the product name
+src/design/    design system: shadcn primitives in ui/, theme.css holds every colour
 src/data/      typed loaders for public/data
 src/shell/     routes and the presenter view
 src/site/      landing page              (site track)
@@ -37,7 +37,12 @@ src/demo/scene3/                         (demo3 track)
 ```
 
 `src/design`, `src/data`, `src/shell`, `public/data` and `docs` are shared and frozen. See
-`CLAUDE.md` for the full working rules.
+`CLAUDE.md` for the working rules and **`docs/DESIGN_HANDOFF.md` before writing any UI**.
+
+## Restyling
+
+Every colour, radius and font is defined in `src/design/theme.css` and nowhere else. Change
+`--brand-amber` there and the whole site follows. `/design` renders every component.
 
 ## Regenerating the data
 

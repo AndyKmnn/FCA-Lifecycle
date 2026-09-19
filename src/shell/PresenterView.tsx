@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BRAND, Chip, Stepper } from '../design'
+import { Chip, Separator, Stepper, Wordmark } from '../design'
 import Scene1 from '../demo/scene1/Scene1'
 import Scene2 from '../demo/scene2/Scene2'
 import Scene3 from '../demo/scene3/Scene3'
@@ -15,6 +15,15 @@ const SCENES: Array<{ label: string; Component: (props: SceneProps) => React.Rea
 ]
 
 const STEP_LABELS = SCENES.map((s) => s.label)
+
+/** A key cap, the way a manual prints one. */
+function Key({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded-[4px] border border-border bg-card px-1.5 font-mono text-[11px] font-medium text-muted-foreground">
+      {children}
+    </kbd>
+  )
+}
 
 export function PresenterView() {
   const [index, setIndex] = useState(0)
@@ -53,25 +62,28 @@ export function PresenterView() {
   const Current = SCENES[index].Component
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-surface">
+    <div className="h-screen w-screen overflow-hidden bg-background">
       <Stage>
-        <div className="absolute inset-0 flex flex-col px-16 py-12">
-          <header className="flex items-center justify-between">
+        <div className="absolute inset-0 flex flex-col px-14 py-10">
+          <header className="flex shrink-0 items-center justify-between">
             <div className="flex items-center gap-4">
-              <span className="text-2xl font-bold tracking-tight text-ink">{BRAND.name}</span>
+              <Wordmark />
+              <Separator orientation="vertical" className="h-6" />
               <Chip>Autohof Hallertau - Demo DSO</Chip>
             </div>
             <Stepper steps={STEP_LABELS} current={index} onSelect={setIndex} />
           </header>
 
-          <main className="relative mt-10 flex-1">
+          <Separator className="mt-6 shrink-0" />
+
+          <main className="relative mt-8 min-h-0 flex-1">
             <AnimatePresence mode="wait">
               <motion.div
                 key={`${run}-${index}`}
-                initial={{ opacity: 0, y: 14 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -14 }}
-                transition={{ duration: 0.35, ease: 'easeOut' }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
                 className="absolute inset-0"
               >
                 <Current onAdvance={next} onRestart={restart} />
@@ -79,12 +91,31 @@ export function PresenterView() {
             </AnimatePresence>
           </main>
 
-          <footer className="mt-8 flex items-center justify-between text-sm text-ink-muted">
-            <span>
-              Scene {index + 1} of {SCENES.length} - right arrow or space: next, left arrow: back,
-              R: restart
-            </span>
-            <Link to="/" className="font-semibold text-ink-muted hover:text-ink">
+          <Separator className="mt-8 shrink-0" />
+
+          <footer className="mt-5 flex shrink-0 items-center justify-between text-[13px] text-muted-foreground">
+            <div className="flex items-center gap-5">
+              <span className="tabular">
+                Scene {index + 1} of {SCENES.length}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Key>&rarr;</Key>
+                <Key>space</Key>
+                next
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Key>&larr;</Key>
+                back
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Key>R</Key>
+                restart
+              </span>
+            </div>
+            <Link
+              to="/"
+              className="rounded-md font-medium transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+            >
               Back to site
             </Link>
           </footer>

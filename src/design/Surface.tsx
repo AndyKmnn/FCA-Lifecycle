@@ -1,19 +1,23 @@
 import type { HTMLAttributes, ReactNode } from 'react'
-import { cn } from './cn'
+import { cn } from './utils'
 
 export type SurfaceVariant = 'raised' | 'pressed' | 'inset' | 'flat'
 export type SurfaceRadius = 'md' | 'lg'
 
+/**
+ * One panel, four weights. Hairline borders do the work, not shadows -
+ * the surface should read like a milled plate, not a cushion.
+ */
 const VARIANT: Record<SurfaceVariant, string> = {
-  raised: 'nm-raised bg-surface',
-  pressed: 'nm-pressed bg-surface',
-  inset: 'nm-inset bg-surface-sunk',
-  flat: 'nm-flat bg-surface',
+  raised: 'bg-card border border-border shadow-xs',
+  pressed: 'bg-muted border border-border',
+  inset: 'bg-muted border border-border shadow-[inset_0_1px_3px_color-mix(in_oklch,var(--foreground)_8%,transparent)]',
+  flat: 'bg-transparent border border-transparent',
 }
 
 const RADIUS: Record<SurfaceRadius, string> = {
-  md: 'rounded-[16px]',
-  lg: 'rounded-[24px]',
+  md: 'rounded-md',
+  lg: 'rounded-lg',
 }
 
 export interface SurfaceProps extends HTMLAttributes<HTMLDivElement> {
@@ -22,7 +26,6 @@ export interface SurfaceProps extends HTMLAttributes<HTMLDivElement> {
   children?: ReactNode
 }
 
-/** The one raised / pressed / inset panel used everywhere. */
 export function Surface({
   variant = 'raised',
   radius = 'lg',
