@@ -6,7 +6,7 @@ import { CountersPanel } from './CountersPanel'
 import { EndCard } from './EndCard'
 import { Timeline } from './Timeline'
 import { TopBar } from './TopBar'
-import { planYear, type YearPlan } from './replan'
+import { MAX_SLOWDOWN, planYear, type YearPlan } from './replan'
 import { JUMP_DAYS } from './script'
 import { useReplay } from './useReplay'
 
@@ -129,7 +129,7 @@ function FootNote({ plan }: { plan: YearPlan }) {
           The greedy rule cannot hold the cap on{' '}
           {plan.infeasible.map((d) => d.date).join(', ')}: short by{' '}
           {plan.infeasible.map((d) => `${d.deficitMwh.toFixed(2)} MWh`).join(', ')} after a full
-          battery and a 10% slowdown.
+          battery and a {Math.round(MAX_SLOWDOWN * 100)}% slowdown.
         </span>
       </div>
     </Surface>

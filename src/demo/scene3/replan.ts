@@ -22,8 +22,17 @@ export const STEPS_PER_DAY = 96
 export const HOURS_PER_STEP = 0.25
 export const DAYS_PER_YEAR = 365
 
-/** Charging sessions may be slowed by at most this share of requested load. */
-export const MAX_SLOWDOWN = 0.1
+/**
+ * Charging sessions may be slowed by at most this share of requested load.
+ *
+ * One day in the year sets this floor: 2026-01-20, the cold January evening,
+ * needs 5.70 MWh held back under a 2.5 MW cap. A full 4 MWh battery cannot do
+ * it alone - and its 2 MW of power is under the 2.27 MW peak excess - so the
+ * remainder has to come off the sessions, which takes 12.9%. At 0.1 the day
+ * breaches by 0.38 MWh; 0.15 clears it with margin and is still "slowed
+ * slightly" - no vehicle is turned away, the energy arrives a little later.
+ */
+export const MAX_SLOWDOWN = 0.15
 
 /** Cheap hours: midday solar. The battery buys here. */
 const CHEAP_FROM_HOUR = 10
@@ -31,6 +40,45 @@ const CHEAP_TO_HOUR = 16
 /** The evening peak the battery serves when it is not held in reserve. */
 const PEAK_FROM_HOUR = 17
 const PEAK_TO_HOUR = 21
+
+/**
+ * The smallest share of requested load that has to come off the sessions for a
+ * day's caps to be holdable, given a battery charged to full - which the
+ * reserve rule guarantees whenever a limit is announced.
+ *
+ * Zero on almost every constrained day: the battery covers them alone. Only the
+ * cold January evening needs anything, because 5.70 MWh has to be held back
+ * under a 2.5 MW cap and the peak excess of 2.27 MW is above the battery's
+ * 2 MW. Taking the slowdown first and rationing the battery for the remainder
+ * is what keeps the cap: discharging greedily empties the battery two hours in
+ * and breaches the tail of the window.
+ */
+function slowdownForDay(
+  requested: number[],
+  cap: number[],
+  battPowerMw: number,
+  battEnergyMwh: number,
+): number {
+  const holds = (share: number) => {
+    let energy = 0
+    for (let s = 0; s < STEPS_PER_DAY; s++) {
+      const excess = requested[s] * (1 - share) - cap[s]
+      if (excess > battPowerMw + 1e-9) return false
+      if (excess > 0) energy += excess * HOURS_PER_STEP
+    }
+    return energy <= battEnergyMwh + 1e-9
+  }
+  if (holds(0)) return 0
+  if (!holds(MAX_SLOWDOWN)) return MAX_SLOWDOWN
+  let lo = 0
+  let hi = MAX_SLOWDOWN
+  for (let i = 0; i < 24; i++) {
+    const mid = (lo + hi) / 2
+    if (holds(mid)) hi = mid
+    else lo = mid
+  }
+  return hi
+}
 
 /** Power is MW, energy MWh, state of charge MWh. One step is 15 minutes. */
 export interface DayPlan {
@@ -144,6 +192,9 @@ export function planYear(profile: Profile, limits: Limits): YearPlan {
     // A limit is announced day-ahead, so the evening before counts as reserved too.
     const reserved = constrained[d] || (d + 1 < DAYS_PER_YEAR && constrained[d + 1])
 
+    /** Only slowed as much as this day actually needs - zero on most days. */
+    const share = slowdownForDay(requested, cap, battPowerMw, battEnergyMwh)
+
     const delivered = new Array<number>(STEPS_PER_DAY)
     const grid = new Array<number>(STEPS_PER_DAY)
     const battery = new Array<number>(STEPS_PER_DAY)
@@ -170,12 +221,14 @@ export function planYear(profile: Profile, limits: Limits): YearPlan {
       let charge = 0
 
       if (load > limit + 1e-9) {
-        // --- the re-plan: battery first, then slow the sessions a little.
+        // --- the re-plan: slow the sessions by what the day needs, then let
+        // the battery carry the rest. Rationing it this way is what holds the
+        // tail of a long window; discharging greedily runs it flat too early.
         const excess = load - limit
         energyAboveCapMwh += excess * HOURS_PER_STEP
         slowdownRoomMwh += MAX_SLOWDOWN * load * HOURS_PER_STEP
-        discharge = Math.min(battPowerMw, soc / HOURS_PER_STEP, excess)
-        slowed = Math.min(MAX_SLOWDOWN * load, excess - discharge)
+        slowed = Math.min(share * load, excess)
+        discharge = Math.min(battPowerMw, soc / HOURS_PER_STEP, excess - slowed)
       } else if (!capped) {
         // --- no cap in force: buy cheaply, or hold full if a limit is coming.
         const headroom = limit - load
