@@ -85,6 +85,8 @@ export interface InfeasibleDay {
 export interface YearPlan {
   days: DayPlan[]
   constrainedDays: number[]
+  /** Gross margin per MWh sold, from profile.json - what the revenue counter uses. */
+  marginEurPerMwh: number
   totals: {
     requestedMwh: number
     servedMwh: number
@@ -265,6 +267,7 @@ export function planYear(profile: Profile, limits: Limits): YearPlan {
   return {
     days,
     constrainedDays: days.filter((d) => d.constrained).map((d) => d.dayOfYear),
+    marginEurPerMwh: margin,
     totals: {
       requestedMwh: runRequested,
       servedMwh: runServed,

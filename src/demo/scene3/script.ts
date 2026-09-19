@@ -11,23 +11,15 @@ export const FCA_MONTHS = 8
 /** "40 months of queue skipped." */
 export const MONTHS_SKIPPED = WAIT_MONTHS - FCA_MONTHS
 
-/** The three jump-to days, with the wording the script uses for each. */
-export const JUMP_DAYS: ReadonlyArray<{ date: string; short: string; blurb: string }> = [
-  {
-    date: '2026-01-20',
-    short: 'Cold January evening',
-    blurb: 'Cold January weekday evening - cap 2.5 MW, 17-20 h',
-  },
-  {
-    date: '2026-04-03',
-    short: 'Easter travel peak',
-    blurb: 'Good Friday - cap 4 MW, 11-15 h, the hardest day',
-  },
-  {
-    date: '2026-06-19',
-    short: 'Sunny June Friday',
-    blurb: 'Sunny June Friday - no cap, the battery charges cheaply',
-  },
+/**
+ * The three jump-to days. Only the date and the button label live here - the cap,
+ * the hours and the reason are read from public/data/limits.json at runtime, so
+ * they cannot drift from the data the way a second copy would.
+ */
+export const JUMP_DAYS: ReadonlyArray<{ date: string; short: string }> = [
+  { date: '2026-01-20', short: 'Cold January evening' },
+  { date: '2026-04-03', short: 'Easter travel peak' },
+  { date: '2026-06-19', short: 'Sunny June Friday' },
 ]
 
 /** "End card: 'Connected 40 months earlier. Every limit met.'" */

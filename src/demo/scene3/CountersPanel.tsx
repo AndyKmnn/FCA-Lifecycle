@@ -60,7 +60,7 @@ export function CountersPanel({
           className="flex-1 justify-center"
           label="Earned versus waiting"
           unit="m euros"
-          hint="Energy served, at 250 euros per MWh"
+          hint={`Energy served, at ${plan.marginEurPerMwh} euros per MWh`}
           value={
             settled ? (
               <Counter value={plan.totals.revenueEur / 1e6} decimals={2} />
