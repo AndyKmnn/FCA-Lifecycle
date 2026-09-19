@@ -267,7 +267,9 @@ for (const row of TOD_TABLE)
 // days this site peaks hardest. Three days are fixed by the demo script.
 const SCRIPTED = {
   '2026-01-20': { windows: [{ startHour: 17, endHour: 20, limitMw: 2.5 }], reason: 'Cold snap - evening peak on the feeder' },
-  '2026-04-03': { windows: [{ startHour: 11, endHour: 15, limitMw: 4.0 }], reason: 'Easter travel peak - regional transfer limit' },
+  // The day's peak is at 17:30, so the window sits 16-20 h: an 11-15 h window
+  // would be entirely above the load and the battery would never move.
+  '2026-04-03': { windows: [{ startHour: 16, endHour: 20, limitMw: 4.0 }], reason: 'Easter travel peak - regional transfer limit' },
   '2026-06-19': { windows: [], reason: 'High solar infeed - no limit' },
 }
 const SCRIPTED_DAYS = Object.keys(SCRIPTED)

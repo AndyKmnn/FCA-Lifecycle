@@ -22,7 +22,7 @@ draws. Three option cards build in, computed in the browser from profile.json:
   [target was about 610 h, 410 MWh, 2.2%]
 - Dynamic, seasonal time-of-day cap 3.0-6.0 MW: 244 h, 146 MWh (0.8%), about 37,000 euros
   [target was about 240 h, 150 MWh, 0.8%]
-- Fully dynamic, day-ahead limits 2.5-6.0 MW: 94 h, 56 MWh (0.3%), about 14,000 euros,
+- Fully dynamic, day-ahead limits 2.5-6.0 MW: 95 h, 56 MWh (0.3%), about 14,000 euros,
   RECOMMENDED [target was about 95 h, 55 MWh, 0.3%]
 Cost before battery at the assumed margin, shown per card. The day-ahead feed constrains 33 of
 the 365 days; on every other day the limit is the full 6 MW. Then a draft term sheet types itself:
@@ -34,7 +34,7 @@ Scene 3 - Autopilot replay (90 s). One year in fast-forward. Demo DSO console em
 limits as an API-style feed. On each limit the schedule re-plans: battery absorbs the cap,
 charging sessions are slowed slightly, no vehicle is turned away. Three jump-to days: a cold
 January weekday evening (Tue 20 January 2026, cap 2.5 MW, 17-20 h), the Easter travel peak
-(Good Friday 3 April 2026, cap 4 MW, 11-15 h, the hardest day), a sunny June Friday
+(Good Friday 3 April 2026, cap 4 MW, 16-20 h, the hardest day), a sunny June Friday
 (19 June 2026, no cap, battery charges cheaply). Counters end at: 40 months
 of queue skipped, about 4.6 million euros earned versus waiting, breaches 0. Panel label:
 "Simulation". End card: "Connected 40 months earlier. Every limit met." Buttons Replay, Back to site.
