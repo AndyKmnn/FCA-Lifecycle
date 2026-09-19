@@ -12,23 +12,46 @@ shows; the targets they were tuned to are kept below in brackets.
 Profile: peak 5.80 MW, average 2.10 MW, 18,396 MWh (18.4 GWh) a year.
 Year one at the assumed margin: 4.60 million euros.
 
-Scene 1 - Headroom map (10 s). Germany, federal states coloured by proxy headroom. Bavaria
-lights up, the site pin pulses. Label: "Proxy estimate - illustrative". Audience thinks: "there
-is still room, if you know where". Click the pin to continue.
+The four grid operator districts are fictional; the names are deliberate placeholders, not real
+German network operators. They come from public/data/districts.json - states covered, limit type
+written, months to connect and months to firm:
+- Demo DSO Nord - SH, HH, HB, NI, MV - static cap - 14 months to connect, 44 to firm
+- Demo DSO West - NW, RP, SL, HE - static cap - 19 months to connect, 52 to firm
+- Demo DSO Ost - BE, BB, ST, SN, TH - seasonal time-of-day cap - 12 months to connect, 40 to firm
+- Demo DSO Sued - BY, BW - fully dynamic day-ahead limits - 8 months to connect, 48 to firm
+The site is in Bavaria, so it sits in Demo DSO Sued: 8 months instead of 48, the 40 months of
+queue skipped that scene 3 counts at the end.
 
-Scene 2 - Upload and term sheet (60 s). The charging-park profile "uploads". Load-duration curve
-draws. Three option cards build in, computed in the browser from profile.json:
-- Static cap 3.5 MW all year: 694 affected hours, 412 MWh at risk (2.2%), about 103,000 euros
+Scene 1 - Where can this connect (20 s). The site's 15-minute profile "uploads": 35,040 intervals,
+peak 5.80 MW, average 2.10 MW, 18.4 GWh a year, battery 2 MW / 4 MWh. Western and central Europe
+draws with Germany picked out, then the map zooms into Germany, divided into the four operator
+districts. Each district is labelled with its name and months to connect; the site pin sits in
+Bavaria. Label: "Simulation - illustrative" - the months to connect are seeded demo values.
+Audience thinks: "there is still room, if you know where - and who writes it decides the terms".
+The presenter clicks a district to choose it.
+
+Scene 2 - On what terms (60 s). The four districts' offers build in as cards side by side, on
+three axes: when that operator connects you, which limit type it writes, and what that cap costs
+this site. Hours, energy and euros are computed in the browser from profile.json against each
+district's limit type - nothing is quoted, nothing is stored:
+- Demo DSO Nord, static cap 3.5 MW all year: 14 months to connect (44 to firm, 30 skipped),
+  694 affected hours, 412 MWh at risk (2.2%), about 103,000 euros
   [target was about 610 h, 410 MWh, 2.2%]
-- Dynamic, seasonal time-of-day cap 3.0-6.0 MW: 244 h, 146 MWh (0.8%), about 37,000 euros
-  [target was about 240 h, 150 MWh, 0.8%]
-- Fully dynamic, day-ahead limits 2.5-6.0 MW: 95 h, 56 MWh (0.3%), about 14,000 euros,
-  RECOMMENDED [target was about 95 h, 55 MWh, 0.3%]
-Cost before battery at the assumed margin, shown per card. The day-ahead feed constrains 33 of
-the 365 days; on every other day the limit is the full 6 MW. Then a draft term sheet types itself:
-connection 6 MW, limit type, notice period day-ahead, guaranteed minimum 2.5 MW, battery as
-compliance asset, conversion to firm on reinforcement. Audience thinks: "the customer's half of
-an FCA is computable". Button "See it operate".
+- Demo DSO West, the same static cap: 19 months (52 to firm, 33 skipped), and so the same
+  694 h, 412 MWh (2.2%), about 103,000 euros
+- Demo DSO Ost, seasonal time-of-day cap 3.0-6.0 MW: 12 months (40 to firm, 28 skipped), 244 h,
+  146 MWh (0.8%), about 37,000 euros [target was about 240 h, 150 MWh, 0.8%]
+- Demo DSO Sued, fully dynamic day-ahead limits 2.5-6.0 MW: 8 months (48 to firm, 40 skipped),
+  95 h, 56 MWh (0.3%), about 14,000 euros, RECOMMENDED
+  [target was about 95 h, 55 MWh, 0.3%]
+Cost before battery at the assumed margin, shown per card. Recommended is not a stored flag: it
+is whichever offer costs least, which is Demo DSO Sued. Then a draft term sheet types itself for
+the district the presenter picked, or for the recommended one if the scene is opened cold: site,
+operator, connection 6 MW, limit type, notice period, energised in that district's months and not
+the months to firm (8 and not 48 for Demo DSO Sued), guaranteed minimum 2.5 MW, battery as
+compliance asset, conversion to firm on reinforcement, and the cost of the cap. Labels:
+"Simulation" and "Assumption - margin 250 EUR/MWh". Audience thinks: "the customer's half of an
+FCA is computable". Button "See it operate".
 
 Scene 3 - Autopilot replay (90 s). One year in fast-forward. Demo DSO console emits day-ahead
 limits as an API-style feed. On each limit the schedule re-plans: battery absorbs the cap,

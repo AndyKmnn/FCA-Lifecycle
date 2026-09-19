@@ -91,3 +91,31 @@ export interface Regions {
   }
   regions: Region[]
 }
+
+/** Which of the three FCA limitation types a district will write. */
+export type LimitType = 'static' | 'dynamic' | 'fullyDynamic'
+
+export interface District {
+  id: string
+  name: string
+  region: string
+  /** State codes, as in regions.json. Every state belongs to exactly one district. */
+  states: string[]
+  limitType: LimitType
+  /** Months to energisation under an FCA. */
+  monthsToConnect: number
+  /** Months to a firm connection if you wait for reinforcement instead. */
+  monthsToFirm: number
+  note: string
+}
+
+export interface Districts {
+  meta: {
+    label: 'Simulation'
+    note: string
+    year: number
+    requestedMw: number
+    country: string
+  }
+  districts: District[]
+}

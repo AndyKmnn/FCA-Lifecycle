@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "label": "Simulation",
+    "note": "Fictional grid operator districts for the demo. Not real network operators - the names are deliberately obvious placeholders. Months are illustrative.",
+    "year": 2026,
+    "requestedMw": 6,
+    "country": "DE"
+  },
+  "districts": [
+    {
+      "id": "nord",
+      "name": "Demo DSO Nord",
+      "region": "North",
+      "states": ["SH", "HH", "HB", "NI", "MV"],
+      "limitType": "static",
+      "monthsToConnect": 14,
+      "monthsToFirm": 44,
+      "note": "Writes a static cap only - one number for the whole year."
+    },
+    {
+      "id": "west",
+      "name": "Demo DSO West",
+      "region": "West",
+      "states": ["NW", "RP", "SL", "HE"],
+      "limitType": "static",
+      "monthsToConnect": 19,
+      "monthsToFirm": 52,
+      "note": "Writes a static cap only, and the queue is the longest of the four."
+    },
+    {
+      "id": "ost",
+      "name": "Demo DSO Ost",
+      "region": "East",
+      "states": ["BE", "BB", "ST", "SN", "TH"],
+      "limitType": "dynamic",
+      "monthsToConnect": 12,
+      "monthsToFirm": 40,
+      "note": "Writes a seasonal time-of-day cap agreed up front."
+    },
+    {
+      "id": "sued",
+      "name": "Demo DSO Sued",
+      "region": "South",
+      "states": ["BY", "BW"],
+      "limitType": "fullyDynamic",
+      "monthsToConnect": 8,
+      "monthsToFirm": 48,
+      "note": "Writes fully dynamic day-ahead limits, and connects soonest."
+    }
+  ]
+}

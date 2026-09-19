@@ -4,6 +4,7 @@ export {
   STEPS_PER_DAY,
   dayIndex,
   limitSeriesForDay,
+  loadDistricts,
   loadLimits,
   loadProfile,
   loadRegions,

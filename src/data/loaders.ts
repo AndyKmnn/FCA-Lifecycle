@@ -1,4 +1,4 @@
-import type { Limits, Profile, Regions } from './types'
+import type { Districts, Limits, Profile, Regions } from './types'
 
 /**
  * Loads the seeded demo data from public/data.
@@ -23,6 +23,7 @@ function load<T>(file: string): Promise<T> {
 export const loadProfile = () => load<Profile>('profile.json')
 export const loadLimits = () => load<Limits>('limits.json')
 export const loadRegions = () => load<Regions>('regions.json')
+export const loadDistricts = () => load<Districts>('districts.json')
 
 export const STEPS_PER_DAY = 96
 export const HOURS_PER_STEP = 0.25
