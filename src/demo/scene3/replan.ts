@@ -6,12 +6,17 @@
  * mounts (35,040 quarter-hour steps, a few milliseconds) and the replay then just
  * animates the result, so nothing is computed inside the animation frame.
  *
- * The rule is deliberately simple and greedy, one step at a time:
- *   1. If the requested load is above the day-ahead cap, discharge the battery.
- *   2. If that is not enough, slow the charging sessions - by at most
- *      MAX_SLOWDOWN of the requested load. No vehicle is turned away; the
- *      energy is delivered a little later.
- *   3. Otherwise the step is a breach, and it is reported rather than hidden.
+ * The rule, one step at a time:
+ *   1. If the requested load is above the day-ahead cap, slow the charging
+ *      sessions - by the share this day actually needs, which slowdownForDay
+ *      works out up front and is zero on all but one day of the year.
+ *   2. Discharge the battery for whatever excess is left. Taking the slowdown
+ *      first is what rations the battery across a long window; discharging
+ *      greedily runs it flat early and breaches the tail.
+ *   3. If the battery still cannot cover the step, fall back to the full
+ *      MAX_SLOWDOWN before giving up. No vehicle is turned away; the energy is
+ *      delivered a little later.
+ *   4. Otherwise the step is a breach, and it is reported rather than hidden.
  * Outside a cap the battery buys cheaply in the midday solar hours and serves the
  * evening peak, except when a limit is announced for today or tomorrow - then it
  * is held in reserve and charged to full.
@@ -43,8 +48,15 @@ const PEAK_TO_HOUR = 21
 
 /**
  * The smallest share of requested load that has to come off the sessions for a
- * day's caps to be holdable, given a battery charged to full - which the
- * reserve rule guarantees whenever a limit is announced.
+ * day's caps to be holdable, assuming a battery charged to full. The reserve
+ * rule achieves that on every constrained day in this data set, but it is not
+ * guaranteed in general, so the step loop below re-checks and falls back to the
+ * full MAX_SLOWDOWN if the battery turns out to be short.
+ *
+ * The energy test charges a whole day's excess against one 4 MWh budget and
+ * ignores any recharge between two windows on the same day. That is deliberate:
+ * it can only over-estimate the share needed, never under-estimate it. Do not
+ * "optimise" it without restoring that safety.
  *
  * Zero on almost every constrained day: the battery covers them alone. Only the
  * cold January evening needs anything, because 5.70 MWh has to be held back
@@ -229,6 +241,13 @@ export function planYear(profile: Profile, limits: Limits): YearPlan {
         slowdownRoomMwh += MAX_SLOWDOWN * load * HOURS_PER_STEP
         slowed = Math.min(share * load, excess)
         discharge = Math.min(battPowerMw, soc / HOURS_PER_STEP, excess - slowed)
+        if (excess - slowed - discharge > 1e-9) {
+          // The battery came up short of what the day's plan assumed. Take the
+          // rest off the sessions rather than breach - never worse than the
+          // plain greedy rule, whatever state the battery is in.
+          slowed = Math.min(MAX_SLOWDOWN * load, excess)
+          discharge = Math.min(battPowerMw, soc / HOURS_PER_STEP, excess - slowed)
+        }
       } else if (!capped) {
         // --- no cap in force: buy cheaply, or hold full if a limit is coming.
         const headroom = limit - load
