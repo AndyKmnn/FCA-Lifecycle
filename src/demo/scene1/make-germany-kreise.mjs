@@ -231,12 +231,37 @@ const operators = out.map((k) => {
     : limitType === 'static' ? Math.round(between(r, 12, 26, 0))
     : Math.round(between(r, 28, 60, 0))
 
+  // Always generated, even where nothing is offered yet: the timeline needs a
+  // level for this operator to arrive at when it starts offering.
   const guaranteedMinimumMw = between(r, 1.5, 3.0)
   const capMw =
     limitType === 'fullyDynamic' ? between(r, 4.4, 6.0)
     : limitType === 'dynamic' ? between(r, 3.2, 4.8)
-    : limitType === 'static' ? between(r, 2.8, 4.2)
-    : 0
+    : between(r, 2.8, 4.2)
+
+  /**
+   * When this operator starts offering an FCA at all.
+   *
+   * Anchored to the law rather than scattered: the Netzanschlusspaket would
+   * make an FCA mandatory on request, and the draft has it landing in 2028.
+   * Most of the hold-outs therefore start that year; a tail drags on, because
+   * "mandatory to offer" and "has a process that works" are not the same date.
+   */
+  const fcaFromYear = offersFca ? 2025 : r() < 0.72 ? 2028 : 2029 + Math.floor(r() * 3)
+
+  /**
+   * When the node itself gets built out - after which the queue collapses and
+   * the flexible connection stops being the only way in.
+   */
+  const reinforcementYear = 2027 + Math.floor(r() * 8)
+
+  /**
+   * Points of digitalisation a year. Section 14a requires monitoring across the
+   * whole low-voltage grid by 2029, so nobody is standing still, but the
+   * operators starting from further back move faster because they have further
+   * to go and the same deadline.
+   */
+  const digiGrowth = +(between(r, 3, 9) * (digitalisation < 45 ? 1.6 : 1)).toFixed(1)
 
   return {
     id: k.id,
@@ -247,7 +272,7 @@ const operators = out.map((k) => {
     offersFca,
     limitType,
     capMw,
-    guaranteedMinimumMw: limitType === 'none' ? 0 : guaranteedMinimumMw,
+    guaranteedMinimumMw,
     monthsToConnect,
     monthsToFirm: monthsToConnect + Math.round(between(r, 18, 40, 0)),
     noticePeriod:
@@ -261,6 +286,9 @@ const operators = out.map((k) => {
     voltageLevel: pick(r, ['MS', 'MS', 'MS', 'HS/MS', 'HS/MS', 'HS']),
     headroomMw: between(r, k.urban ? 0.4 : 1.2, k.urban ? 9 : 26),
     digitalisation,
+    fcaFromYear,
+    reinforcementYear,
+    digiGrowth,
   }
 })
 
@@ -289,11 +317,14 @@ Object.assign(home, {
   monthsToFirm: homeDistrict.monthsToFirm,
   noticePeriod: limits.meta.noticePeriod,
   digitalisation: 88,
+  fcaFromYear: 2025,
 })
 
 const json = {
   meta: {
     homeId: HOME_ID,
+    baseYear: 2026,
+    horizonYear: 2032,
     note:
       'Regional operator names and generated terms. Germany has roughly 870 distribution ' +
       'system operators; what each would write into a flexible connection agreement is not ' +

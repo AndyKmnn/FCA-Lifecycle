@@ -37,11 +37,92 @@ export interface Operator {
   headroomMw: number
   /** How far along this operator is with low-voltage monitoring, 0-100. */
   digitalisation: number
+  /** The year this operator starts offering an FCA at all. */
+  fcaFromYear: number
+  /** The year this node's reinforcement lands, after which the queue collapses. */
+  reinforcementYear: number
+  /** Points of digitalisation a year. */
+  digiGrowth: number
 }
 
 export interface OperatorFile {
-  meta: { note: string; year: number; requestedMw: number; count: number; homeId: string }
+  meta: {
+    note: string
+    year: number
+    requestedMw: number
+    count: number
+    homeId: string
+    baseYear: number
+    horizonYear: number
+  }
   operators: Operator[]
+}
+
+/** The year the generated figures describe. */
+export const BASE_YEAR = 2026
+
+/** The thresholds the generator used, kept here so both sides agree. */
+const FULLY_DYNAMIC_AT = 74
+const DYNAMIC_AT = 48
+
+const TIER: Record<LimitType, number> = { none: -1, static: 0, dynamic: 1, fullyDynamic: 2 }
+
+/**
+ * This operator as it would stand in a given year.
+ *
+ * Three things move, and each is anchored to something real rather than to a
+ * curve that looked nice:
+ *
+ *   offering   - the Netzanschlusspaket would make an FCA mandatory on request,
+ *                so the hold-outs mostly start in 2028.
+ *   monitoring - section 14a requires monitoring across the whole low-voltage
+ *                grid by 2029, and an operator that can see its grid can write
+ *                a dynamic limit instead of a blunt static one.
+ *   the node   - once reinforcement lands the queue collapses, and the flexible
+ *                connection stops being the only way in.
+ *
+ * Which is the honest answer to "won't this fix itself?" - yes, and here is the
+ * year. Pure, so the same year always gives the same country.
+ */
+export function operatorAt(o: Operator, year: number): Operator {
+  if (year <= BASE_YEAR) return o
+
+  const years = year - BASE_YEAR
+  const offersFca = year >= o.fcaFromYear
+  const digitalisation = Math.min(100, Math.round(o.digitalisation + o.digiGrowth * years))
+  const reinforced = year >= o.reinforcementYear
+
+  const limitType: LimitType =
+    !offersFca ? 'none'
+    : digitalisation >= FULLY_DYNAMIC_AT ? 'fullyDynamic'
+    : digitalisation >= DYNAMIC_AT ? 'dynamic'
+    : 'static'
+
+  // A better limit type is a finer instrument, so the ceiling it can carry
+  // rises - never past the connection the site actually asked for.
+  const lift = Math.max(0, TIER[limitType] - Math.max(0, TIER[o.limitType]))
+  const capMw = offersFca ? Math.min(6, +(o.capMw + 0.7 * lift).toFixed(1)) : 0
+
+  let monthsToConnect = o.monthsToConnect - 3 * lift
+  if (reinforced) monthsToConnect = Math.round(monthsToConnect * 0.3)
+  monthsToConnect = Math.max(3, Math.round(monthsToConnect))
+
+  return {
+    ...o,
+    offersFca,
+    digitalisation,
+    limitType,
+    capMw,
+    guaranteedMinimumMw: offersFca ? o.guaranteedMinimumMw : 0,
+    monthsToConnect,
+    monthsToFirm: reinforced ? monthsToConnect : Math.max(monthsToConnect, o.monthsToFirm - 4 * years),
+    headroomMw: reinforced ? +(o.headroomMw + 12).toFixed(1) : o.headroomMw,
+    noticePeriod:
+      limitType === 'fullyDynamic' ? 'day-ahead'
+      : limitType === 'dynamic' ? 'seasonal schedule'
+      : limitType === 'static' ? 'fixed, no notice'
+      : 'not offered',
+  }
 }
 
 /** The terms the presenter has typed over the top, per operator id. */

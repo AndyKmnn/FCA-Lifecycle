@@ -10,8 +10,10 @@ import { OperatorDetail } from './OperatorDetail'
 import { OperatorList } from './OperatorList'
 import {
   applyFilters,
+  BASE_YEAR,
   DEFAULT_FILTERS,
   loadOperators,
+  operatorAt,
   withAmendment,
   type Amendments,
   type Filters,
@@ -84,24 +86,37 @@ function Explorer({
   const [sort, setSort] = useState<SortKey>('months')
   const [selectedId, setSelectedId] = useState<string | null>(file.meta.homeId)
   const [amendments, setAmendments] = useState<Amendments>(() => new Map())
+  const [year, setYear] = useState(BASE_YEAR)
 
   const started = fileName !== null
 
+  /**
+   * The country as it stands in the chosen year, before anything the presenter
+   * has typed over the top. Everything downstream reads this, so moving the
+   * year moves the map, the list and the detail panel together.
+   */
+  const projected = useMemo(
+    () => file.operators.map((o) => operatorAt(o, year)),
+    [file.operators, year],
+  )
+
   const byId = useMemo(() => {
     const m = new Map<string, Operator>()
-    for (const o of file.operators) m.set(o.id, withAmendment(o, amendments))
+    for (const o of projected) m.set(o.id, withAmendment(o, amendments))
     return m
-  }, [file.operators, amendments])
+  }, [projected, amendments])
 
   const originals = useMemo(() => {
     const m = new Map<string, Operator>()
-    for (const o of file.operators) m.set(o.id, o)
+    for (const o of projected) m.set(o.id, o)
     return m
-  }, [file.operators])
+  }, [projected])
+
+  const offering = useMemo(() => projected.filter((o) => o.offersFca).length, [projected])
 
   const rows = useMemo(
-    () => applyFilters(file.operators, filters, sort, amendments),
-    [file.operators, filters, sort, amendments],
+    () => applyFilters(projected, filters, sort, amendments),
+    [projected, filters, sort, amendments],
   )
 
   const matched = useMemo(() => new Set(rows.map((o) => o.id)), [rows])
@@ -175,7 +190,30 @@ function Explorer({
               <Swatch color="var(--muted)" /> no FCA
             </div>
 
-            <div className="mt-2 flex min-h-0 flex-1 items-center justify-center">
+            <label className="mt-4 block">
+              <span className="flex items-baseline justify-between">
+                <span className="micro text-muted-foreground">As it stands in</span>
+                <span className="tabular text-[15px] font-semibold text-foreground">{year}</span>
+              </span>
+              <input
+                type="range"
+                min={BASE_YEAR}
+                max={file.meta.horizonYear}
+                step={1}
+                value={year}
+                onChange={(e) => setYear(Number(e.target.value))}
+                className="mt-1.5 h-1 w-full cursor-pointer accent-[var(--foreground)]"
+                aria-label="Year"
+              />
+              <span className="mt-1.5 block text-[12px] text-muted-foreground">
+                <span className="tabular">{offering}</span> of {file.operators.length} write an
+                FCA{year > BASE_YEAR ? ` by ${year}` : ' today'}
+                {year >= 2028 ? ' \u00b7 Netzanschlusspaket in force' : ''}
+                {year >= 2029 ? ' \u00b7 section 14a monitoring complete' : ''}
+              </span>
+            </label>
+
+            <div className="mt-3 flex min-h-0 flex-1 items-center justify-center">
               <KreisMap
                 operators={byId}
                 matched={matched}
