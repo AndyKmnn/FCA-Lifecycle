@@ -1,16 +1,14 @@
-import { memo, useEffect, useRef } from 'react'
+import { memo, useCallback, useRef, useState } from 'react'
 import { Button, Chip, Surface } from '../../design'
 import { hhmm, longDate } from './format'
-import { SPEEDS, type Speed } from './script'
 import { DAYS_PER_YEAR, type DayPlan } from './replan'
-import type { Frame } from './useReplay'
 
 /**
- * Year progress and transport.
+ * The date, the limit in force, and the year to pick a day from.
  *
- * The progress fill and the playhead are written straight to the DOM from the
- * replay clock; only the date and the button states come from React. Amber on
- * this bar means exactly what it means on the chart: a day-ahead limit.
+ * There used to be a transport here - play, pause, 1x/2x/4x - because the scene
+ * played itself. It does not any more: the presenter drives, so the controls are
+ * the ones that move between days.
  */
 
 /** One mark per constrained day. Memoised - the track never changes, but the bar
@@ -39,47 +37,80 @@ const MONTH_STARTS = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
 export interface TopBarProps {
   days: DayPlan[]
   today: DayPlan
+  day: number
   jumps: ReadonlyArray<{ day: number; short: string }>
-  playing: boolean
-  speed: Speed
-  subscribe: (fn: (f: Frame) => void) => () => void
-  frame: () => Frame
-  onToggle: () => void
-  onSpeed: (s: Speed) => void
-  onJump: (day: number) => void
+  /** How many days carry a cap the presenter set. */
+  overrides: number
+  onSelectDay: (day: number) => void
+  onPrevDay: () => void
+  onNextDay: () => void
+  onReset: () => void
+  onShowYear: () => void
 }
 
 export function TopBar({
   days,
   today,
+  day,
   jumps,
-  playing,
-  speed,
-  subscribe,
-  frame,
-  onToggle,
-  onSpeed,
-  onJump,
+  overrides,
+  onSelectDay,
+  onPrevDay,
+  onNextDay,
+  onReset,
+  onShowYear,
 }: TopBarProps) {
-  const fillRef = useRef<HTMLDivElement>(null)
-  const headRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const [scrubbing, setScrubbing] = useState(false)
 
-  useEffect(() => {
-    const paint = (f: Frame) => {
-      const pct = `${(f.yearProgress * 100).toFixed(3)}%`
-      if (fillRef.current) fillRef.current.style.width = pct
-      if (headRef.current) headRef.current.style.left = pct
-    }
-    paint(frame())
-    return subscribe(paint)
-  }, [subscribe, frame])
+  /**
+   * The track is a plain element, so its bounding rect already carries the
+   * stage's scale - a ratio across it needs no correction.
+   */
+  const dayAt = useCallback((clientX: number) => {
+    const rect = trackRef.current?.getBoundingClientRect()
+    if (!rect || rect.width === 0) return 0
+    const share = (clientX - rect.left) / rect.width
+    return Math.round(share * (DAYS_PER_YEAR - 1))
+  }, [])
+
+  const onTrackDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      e.currentTarget.setPointerCapture(e.pointerId)
+      setScrubbing(true)
+      onSelectDay(dayAt(e.clientX))
+    },
+    [dayAt, onSelectDay],
+  )
+
+  const onTrackMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!scrubbing) return
+      onSelectDay(dayAt(e.clientX))
+    },
+    [scrubbing, dayAt, onSelectDay],
+  )
+
+  const onTrackUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    setScrubbing(false)
+    e.currentTarget.releasePointerCapture(e.pointerId)
+  }, [])
 
   const win = today.windows[0]
+  const position = `${(day / DAYS_PER_YEAR) * 100}%`
 
   return (
     <Surface className="shrink-0 px-6 py-5">
       <div className="flex items-center gap-6">
         <div className="flex min-w-0 items-center gap-3.5">
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={onPrevDay} aria-label="Previous day">
+              &lsaquo;
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onNextDay} aria-label="Next day">
+              &rsaquo;
+            </Button>
+          </div>
           <span className="tabular text-[26px] leading-none font-semibold tracking-[-0.03em] text-foreground">
             {longDate(today.date)}
           </span>
@@ -94,62 +125,57 @@ export function TopBar({
 
         <div className="ml-auto flex items-center gap-2">
           {jumps.map((j) => (
-            <Button key={j.day} variant="outline" size="sm" onClick={() => onJump(j.day)}>
+            <Button
+              key={j.day}
+              variant={j.day === day ? 'secondary' : 'outline'}
+              size="sm"
+              aria-pressed={j.day === day}
+              onClick={() => onSelectDay(j.day)}
+            >
               {j.short}
             </Button>
           ))}
         </div>
 
-        <div className="flex items-center gap-3 border-l border-border pl-4">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onToggle}
-            aria-label={playing ? 'Pause' : 'Play'}
-            className="w-[72px]"
-          >
-            {playing ? 'Pause' : 'Play'}
+        <div className="flex items-center gap-2 border-l border-border pl-4">
+          <Button variant="outline" size="sm" onClick={onReset} disabled={overrides === 0}>
+            Reset{overrides > 0 ? ` (${overrides})` : ''}
           </Button>
-          <div className="flex items-center gap-1">
-            {SPEEDS.map((s) => (
-              <Button
-                key={s}
-                size="sm"
-                variant={s === speed ? 'secondary' : 'ghost'}
-                aria-pressed={s === speed}
-                onClick={() => onSpeed(s)}
-                className={`tabular w-9 ${s === speed ? 'text-foreground' : 'text-muted-foreground'}`}
-              >
-                {s}x
-              </Button>
-            ))}
-          </div>
+          <Button variant="secondary" size="sm" onClick={onShowYear}>
+            Year
+          </Button>
         </div>
       </div>
 
-      {/* ---- the year */}
+      {/* ---- the year, as a day picker */}
       <div className="relative mt-5">
-        <div className="relative h-2 w-full overflow-hidden rounded-full border border-border bg-muted">
+        <div
+          ref={trackRef}
+          role="presentation"
+          onPointerDown={onTrackDown}
+          onPointerMove={onTrackMove}
+          onPointerUp={onTrackUp}
+          onPointerCancel={onTrackUp}
+          className="relative h-2 w-full cursor-pointer overflow-hidden rounded-full border border-border bg-muted"
+        >
           <div
-            ref={fillRef}
             className="absolute inset-y-0 left-0 bg-foreground/25"
-            style={{ width: 0 }}
+            style={{ width: position }}
           />
           <ConstrainedTicks days={days} />
         </div>
         <div
-          ref={headRef}
           aria-hidden
-          className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-foreground bg-background"
-          style={{ left: 0 }}
+          className="pointer-events-none absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-foreground bg-background"
+          style={{ left: position }}
         />
         {jumps.map((j) => (
           <button
             key={j.day}
             type="button"
             title={j.short}
-            aria-label={`Jump to ${j.short}`}
-            onClick={() => onJump(j.day)}
+            aria-label={`Go to ${j.short}`}
+            onClick={() => onSelectDay(j.day)}
             className="absolute -bottom-2 h-2.5 w-2.5 -translate-x-1/2 rotate-45 rounded-[1px] border border-foreground bg-background outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             style={{ left: `${(j.day / DAYS_PER_YEAR) * 100}%` }}
           />

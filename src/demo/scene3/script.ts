@@ -25,11 +25,3 @@ export const JUMP_DAYS: ReadonlyArray<{ date: string; short: string }> = [
 /** "End card: 'Connected 40 months earlier. Every limit met.'" */
 export const END_CARD_HEADLINE = `Connected ${MONTHS_SKIPPED} months earlier.`
 export const END_CARD_SUBHEAD = 'Every limit met.'
-
-/** One year of replay in about 90 seconds. */
-export const REPLAY_SECONDS = 90
-/** A constrained day is held this long so the re-plan is visible. */
-export const CONSTRAINED_DAY_SECONDS = 1.5
-
-export const SPEEDS = [1, 2, 4] as const
-export type Speed = (typeof SPEEDS)[number]

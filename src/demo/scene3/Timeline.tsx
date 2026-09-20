@@ -1,6 +1,5 @@
-import { memo, useEffect, useId, useMemo, useRef } from 'react'
-import { CHART, Label, Surface } from '../../design'
-import type { Frame } from './useReplay'
+import { memo, useCallback, useMemo, useRef, useState } from 'react'
+import { CHART, Chip, Label, Surface } from '../../design'
 import { STEPS_PER_DAY, type DayPlan } from './replan'
 
 /**
@@ -11,10 +10,13 @@ import { STEPS_PER_DAY, type DayPlan } from './replan'
  * the window it applies to are amber; every other series is navy, grey or a
  * signal colour, so the eye goes to the limit and to what the site does about it.
  *
- * A quiet day is drawn whole, so the year fast-forwards as a flipbook rather than
- * a strobe; a day with a limit is swept in from the left, which is what makes the
- * re-plan readable. The sweep is a clip rectangle whose width is written straight
- * to the DOM from the replay clock, so it runs at 60 fps without re-rendering.
+ * The cap line is also the control. The presenter drags it, and the autopilot
+ * re-plans the day underneath it - the slowdown band and the battery area move
+ * while the line moves. That is the whole point of the scene: the limit is the
+ * one number the customer negotiates, so it is the one thing you can grab.
+ *
+ * The day is always drawn whole. An earlier version swept it in from the left in
+ * step with a replay clock; the clock is gone, and with it the sweep.
  */
 
 const W = 960
@@ -24,8 +26,13 @@ const PLOT_W = W - PAD.l - PAD.r
 const PLOT_H = H - PAD.t - PAD.b
 const Y_MAX = 6.4
 
+/** Caps in the data are all one decimal, so the drag lands on the same grid. */
+const STEP_MW = 0.1
+
 const xOf = (step: number) => PAD.l + (step / STEPS_PER_DAY) * PLOT_W
 const yOf = (mw: number) => PAD.t + PLOT_H - (Math.max(0, mw) / Y_MAX) * PLOT_H
+/** The inverse of yOf, for turning a pointer position back into megawatts. */
+const mwOf = (y: number) => ((PAD.t + PLOT_H - y) / PLOT_H) * Y_MAX
 
 /** A straight line through the middle of each quarter-hour. */
 function linePath(series: number[]): string {
@@ -60,14 +67,30 @@ const MW_TICKS = [0, 1, 2, 3, 4, 5, 6]
 
 export interface TimelineProps {
   plan: DayPlan
-  subscribe: (fn: (f: Frame) => void) => () => void
-  frame: () => Frame
+  /** The level the draggable line currently sits at, MW. */
+  capMw: number
+  minMw: number
+  maxMw: number
+  /** True once this day carries a cap the presenter set rather than the data. */
+  overridden: boolean
+  /** Fired continuously while dragging - re-plans this day only. */
+  onCapDrag: (mw: number) => void
+  /** Fired on release - re-plans the whole year. */
+  onCapCommit: (mw: number) => void
 }
 
-function TimelineInner({ plan, subscribe, frame }: TimelineProps) {
-  const clipId = useId()
-  const revealRef = useRef<SVGRectElement>(null)
-  const nowRef = useRef<SVGGElement>(null)
+function TimelineInner({
+  plan,
+  capMw,
+  minMw,
+  maxMw,
+  overridden,
+  onCapDrag,
+  onCapCommit,
+}: TimelineProps) {
+  const svgRef = useRef<SVGSVGElement>(null)
+  const [dragging, setDragging] = useState(false)
+  const [focused, setFocused] = useState(false)
 
   const paths = useMemo(() => {
     // Where the battery is discharging the meter sits below what the vehicles
@@ -87,19 +110,81 @@ function TimelineInner({ plan, subscribe, frame }: TimelineProps) {
     }
   }, [plan])
 
-  const sweep = plan.constrained
-  useEffect(() => {
-    const paint = (f: Frame) => {
-      const progress = sweep ? f.dayProgress : 1
-      revealRef.current?.setAttribute('width', String(PAD.l + PLOT_W * progress))
-      nowRef.current?.setAttribute('transform', `translate(${xOf(progress * STEPS_PER_DAY)} 0)`)
-      nowRef.current?.setAttribute('opacity', sweep && progress < 1 ? '1' : '0')
-    }
-    paint(frame())
-    return subscribe(paint)
-  }, [subscribe, frame, sweep])
+  const settle = useCallback(
+    (mw: number) => Math.min(maxMw, Math.max(minMw, Math.round(mw / STEP_MW) * STEP_MW)),
+    [minMw, maxMw],
+  )
+
+  /**
+   * Pointer position to megawatts.
+   *
+   * getScreenCTM() is what makes this correct rather than approximately correct:
+   * the presenter view scales the whole 1920x1080 stage with a CSS transform, and
+   * the SVG is letterboxed inside its own box by the viewBox. The screen CTM
+   * carries both, so clientY maps straight back to user units. Reading
+   * movementY or a bounding rect by hand gets this wrong at any scale but 1.
+   */
+  const mwAt = useCallback(
+    (clientY: number): number => {
+      const ctm = svgRef.current?.getScreenCTM()
+      if (!ctm) return capMw
+      const point = new DOMPoint(0, clientY).matrixTransform(ctm.inverse())
+      return settle(mwOf(point.y))
+    },
+    [capMw, settle],
+  )
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<SVGGElement>) => {
+      e.preventDefault()
+      e.currentTarget.setPointerCapture(e.pointerId)
+      setDragging(true)
+      onCapDrag(mwAt(e.clientY))
+    },
+    [mwAt, onCapDrag],
+  )
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<SVGGElement>) => {
+      if (!dragging) return
+      onCapDrag(mwAt(e.clientY))
+    },
+    [dragging, mwAt, onCapDrag],
+  )
+
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent<SVGGElement>) => {
+      if (!dragging) return
+      setDragging(false)
+      e.currentTarget.releasePointerCapture(e.pointerId)
+      onCapCommit(mwAt(e.clientY))
+    },
+    [dragging, mwAt, onCapCommit],
+  )
+
+  /**
+   * Up and down are free: the shell's global key handler takes only the arrows
+   * left and right, space and R. Nudging the cap therefore cannot move the scene.
+   */
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<SVGGElement>) => {
+      const by =
+        e.key === 'ArrowUp' ? STEP_MW
+        : e.key === 'ArrowDown' ? -STEP_MW
+        : e.key === 'PageUp' ? STEP_MW * 5
+        : e.key === 'PageDown' ? -STEP_MW * 5
+        : 0
+      if (by === 0) return
+      e.preventDefault()
+      e.stopPropagation()
+      onCapCommit(settle(capMw + by))
+    },
+    [capMw, onCapCommit, settle],
+  )
 
   const charging = plan.chargedMwh > 0.01
+  const active = dragging || focused
+  const capY = yOf(capMw)
 
   return (
     <Surface className="flex min-h-0 flex-1 flex-col p-6">
@@ -114,21 +199,19 @@ function TimelineInner({ plan, subscribe, frame }: TimelineProps) {
               : `${plan.reason} - full ${plan.cap[0].toFixed(1)} MW connection available`}
           </p>
         </div>
-        <Label kind="simulation" className="shrink-0" />
+        <div className="flex shrink-0 items-center gap-2">
+          {overridden ? <Chip selected>Manual override</Chip> : null}
+          <Label kind="simulation" />
+        </div>
       </div>
 
       <svg
+        ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
         className="mt-3 w-full flex-1"
         role="img"
         aria-label={`Schedule for ${plan.date}`}
       >
-        <defs>
-          <clipPath id={clipId}>
-            <rect ref={revealRef} x="0" y="0" width={PAD.l} height={H} />
-          </clipPath>
-        </defs>
-
         {/* ---- hairline grid and axes */}
         {MW_TICKS.map((mw) => (
           <g key={mw}>
@@ -182,52 +265,85 @@ function TimelineInner({ plan, subscribe, frame }: TimelineProps) {
           />
         ))}
 
-        <g clipPath={`url(#${clipId})`}>
-          {/* ---- sessions slowed: the gap between requested and delivered */}
-          <path d={paths.slowed} fill={CHART.warn} opacity={0.22} />
-          {/* ---- the battery: giving back, and buying */}
-          <path d={paths.charge} fill={CHART.muted} opacity={0.2} />
-          <path d={paths.discharge} fill={CHART.ok} opacity={0.18} />
-          {/* ---- requested load, before the re-plan */}
-          <path
-            d={paths.requested}
-            fill="none"
-            stroke={CHART.muted}
-            strokeWidth={1.5}
-            strokeDasharray="5 4"
+        {/* ---- sessions slowed: the gap between requested and delivered */}
+        <path d={paths.slowed} fill={CHART.warn} opacity={0.22} />
+        {/* ---- the battery: giving back, and buying */}
+        <path d={paths.charge} fill={CHART.muted} opacity={0.2} />
+        <path d={paths.discharge} fill={CHART.ok} opacity={0.18} />
+        {/* ---- requested load, before the re-plan */}
+        <path
+          d={paths.requested}
+          fill="none"
+          stroke={CHART.muted}
+          strokeWidth={1.5}
+          strokeDasharray="5 4"
+        />
+        {/* ---- what actually crosses the meter */}
+        <path d={paths.grid} fill="none" stroke={CHART.series} strokeWidth={2} strokeLinejoin="round" />
+        {/* ---- any quarter-hour the meter went over the cap */}
+        {paths.breach.map((s) => (
+          <circle
+            key={s}
+            cx={xOf(s + 0.5)}
+            cy={yOf(plan.grid[s])}
+            r={4}
+            fill="var(--destructive)"
           />
-          {/* ---- what actually crosses the meter */}
+        ))}
+
+        {/* ---- the cap, and the handle: the same line. Grabbing anything else
+                would put a second amber thing on the screen. */}
+        <g
+          role="slider"
+          aria-label="Day-ahead cap"
+          aria-valuemin={minMw}
+          aria-valuemax={maxMw}
+          aria-valuenow={capMw}
+          aria-valuetext={`${capMw.toFixed(1)} megawatts`}
+          tabIndex={0}
+          className="outline-none"
+          style={{ cursor: dragging ? 'grabbing' : 'ns-resize' }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+        >
+          {/* A line 2.5 px wide is not a hit target. This one is, and is invisible. */}
           <path
-            d={paths.grid}
+            d={paths.cap}
             fill="none"
-            stroke={CHART.series}
-            strokeWidth={2}
-            strokeLinejoin="round"
+            stroke="transparent"
+            strokeWidth={22}
+            style={{ pointerEvents: 'stroke' }}
           />
-          {/* ---- any quarter-hour the meter went over the cap */}
-          {paths.breach.map((s) => (
-            <circle
-              key={s}
-              cx={xOf(s + 0.5)}
-              cy={yOf(plan.grid[s])}
-              r={4}
-              fill="var(--destructive)"
-            />
-          ))}
-        </g>
-
-        {/* ---- the cap: drawn in full the moment the limit arrives */}
-        <path d={paths.cap} fill="none" stroke={CHART.accent} strokeWidth={2.5} />
-
-        {/* ---- the playhead, shown only while a re-plan is sweeping in */}
-        <g ref={nowRef} opacity={0}>
-          <line x1={0} x2={0} y1={PAD.t} y2={PAD.t + PLOT_H} stroke={CHART.axis} strokeWidth={1} />
+          <path
+            d={paths.cap}
+            fill="none"
+            stroke={CHART.accent}
+            strokeWidth={active ? 4 : 2.5}
+            style={{ pointerEvents: 'none' }}
+          />
+          {/* The value, so the presenter can land on a round number while dragging. */}
+          <text
+            x={W - PAD.r}
+            y={capY - 9}
+            textAnchor="end"
+            fontSize={13}
+            fontWeight={600}
+            fill={CHART.accent}
+            style={{ pointerEvents: 'none' }}
+          >
+            {capMw.toFixed(1)} MW
+          </text>
         </g>
       </svg>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-border pt-3 text-[12px] text-muted-foreground">
         <LegendItem swatch={<Dash color={CHART.muted} />}>Requested load</LegendItem>
-        <LegendItem swatch={<Solid color={CHART.accent} />}>Day-ahead cap</LegendItem>
+        <LegendItem swatch={<Solid color={CHART.accent} />}>Day-ahead cap - drag it</LegendItem>
         <LegendItem swatch={<Solid color={CHART.series} />}>At the meter</LegendItem>
         <LegendItem swatch={<Block color={CHART.ok} opacity={0.18} />}>
           Battery discharging

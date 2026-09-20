@@ -6,11 +6,18 @@ import type { YearPlan } from './replan'
 
 export interface EndCardProps {
   plan: YearPlan
-  onReplay: () => void
+  onClose: () => void
 }
 
-/** The closing card, worded as in docs/DEMO_SCRIPT.md. */
-export function EndCard({ plan, onReplay }: EndCardProps) {
+/**
+ * The closing card, worded as in docs/DEMO_SCRIPT.md.
+ *
+ * It used to appear by itself when the replay reached 31 December. The presenter
+ * now calls it up from the top bar, so it closes rather than replays - and its
+ * figures follow any cap that has been dragged, which is why the headline still
+ * checks whether the year came out clean.
+ */
+export function EndCard({ plan, onClose }: EndCardProps) {
   const clean = plan.totals.breachSteps === 0
 
   return (
@@ -59,8 +66,8 @@ export function EndCard({ plan, onReplay }: EndCardProps) {
           </div>
 
           <div className="mt-11 flex items-center gap-3">
-            <Button size="2xl" onClick={onReplay}>
-              Replay
+            <Button size="2xl" onClick={onClose}>
+              Back to the day
             </Button>
             <Link to="/">
               <Button size="2xl" variant="outline">

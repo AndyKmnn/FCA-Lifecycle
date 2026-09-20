@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Label, Surface } from '../../design'
 import { dayIndex, loadLimits, loadProfile, type Limits, type Profile } from '../../data'
 import { Console } from './Console'
@@ -6,16 +6,31 @@ import { CountersPanel } from './CountersPanel'
 import { EndCard } from './EndCard'
 import { Timeline } from './Timeline'
 import { TopBar } from './TopBar'
-import { MAX_SLOWDOWN, planYear, type YearPlan } from './replan'
+import {
+  MAX_SLOWDOWN,
+  planYear,
+  replanDay,
+  scriptedCapMw,
+  type CapOverrides,
+  type YearPlan,
+} from './replan'
 import { JUMP_DAYS } from './script'
-import { useReplay } from './useReplay'
+import { useDaySelection } from './useDaySelection'
 
 /**
- * Scene 3 - Autopilot replay. One year of day-ahead limits in about 90 seconds.
+ * Scene 3 - the autopilot, driven by hand.
  *
- * The whole year is planned once, up front, by replan.ts; the replay only ever
- * animates that precomputed result, so the frame loop does no arithmetic beyond
- * moving a clip rectangle and a progress bar.
+ * The presenter picks a day and drags the day-ahead cap; the autopilot re-plans
+ * that day underneath the line. Two costs, deliberately split:
+ *
+ *   during a drag  - one day is re-planned, on every pointer move. Microseconds,
+ *                    and enough to move every series on the chart.
+ *   on release     - the whole year is re-planned, because the battery's state of
+ *                    charge carries across midnight and the year totals would
+ *                    otherwise be a day stale.
+ *
+ * Nothing is written back into the Limits object: loadLimits() caches one
+ * instance and hands the same one to scene 2.
  */
 export default function Scene3() {
   const [data, setData] = useState<{ profile: Profile; limits: Limits } | null>(null)
@@ -37,7 +52,7 @@ export default function Scene3() {
 
   if (error) return <Notice>Could not load the demo data: {error}</Notice>
   if (!data) return <Notice>Planning the year&hellip;</Notice>
-  return <Replay profile={data.profile} limits={data.limits} />
+  return <Explorer profile={data.profile} limits={data.limits} />
 }
 
 function Notice({ children }: { children: React.ReactNode }) {
@@ -48,50 +63,73 @@ function Notice({ children }: { children: React.ReactNode }) {
   )
 }
 
-function Replay({ profile, limits }: { profile: Profile; limits: Limits }) {
-  const plan: YearPlan = useMemo(() => planYear(profile, limits), [profile, limits])
-  const replay = useReplay(plan)
-  const { day, tick, frame, subscribe, toggle, setSpeed, jumpTo, restart } = replay
+const EMPTY: CapOverrides = new Map<number, number>()
 
+function Explorer({ profile, limits }: { profile: Profile; limits: Limits }) {
   const jumps = useMemo(
-    () =>
-      JUMP_DAYS.map((j) => ({ day: dayIndex(j.date, limits.meta.year), short: j.short })),
+    () => JUMP_DAYS.map((j) => ({ day: dayIndex(j.date, limits.meta.year), short: j.short })),
     [limits.meta.year],
   )
 
-  // Play / pause without touching the shell's own keys (arrows, space, R).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'p' || e.key === 'P') {
-        e.preventDefault()
-        toggle()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [toggle])
+  // Opening on a day that carries a limit, so the scene says what it is about
+  // before anyone touches it.
+  const { day, setDay, nextDay, prevDay } = useDaySelection(jumps[0]?.day ?? 0)
 
-  // The slow tick drives the panel numbers; the chart and console are memoised
-  // on the day, so they do not re-render with it. Reading the clock here is what
-  // turns that 10 Hz tick into fresh figures.
-  void tick
-  const live = frame()
+  const [overrides, setOverrides] = useState<CapOverrides>(EMPTY)
+  /** The cap under the cursor mid-drag, before the year has been re-planned. */
+  const [draft, setDraft] = useState<{ day: number; mw: number } | null>(null)
+  const [showYear, setShowYear] = useState(false)
 
-  const today = plan.days[day]
+  const plan: YearPlan = useMemo(
+    () => planYear(profile, limits, overrides),
+    [profile, limits, overrides],
+  )
+
+  const scripted = scriptedCapMw(limits, day)
+  const capMw = draft?.day === day ? draft.mw : (overrides.get(day) ?? scripted)
+
+  /** The day on screen: the committed plan, or a one-day re-plan while dragging. */
+  const today = useMemo(() => {
+    if (draft?.day !== day) return plan.days[day]
+    const withDraft = new Map(overrides)
+    withDraft.set(day, draft.mw)
+    return replanDay(profile, limits, day, plan, withDraft)
+  }, [draft, day, plan, overrides, profile, limits])
+
+  const onCapDrag = useCallback((mw: number) => setDraft({ day, mw }), [day])
+
+  const onCapCommit = useCallback(
+    (mw: number) => {
+      setDraft(null)
+      setOverrides((current) => {
+        const next = new Map(current)
+        // Back on the level the data carries is not an override, it is the data.
+        if (Math.abs(mw - scripted) < 1e-9) next.delete(day)
+        else next.set(day, mw)
+        return next
+      })
+    },
+    [day, scripted],
+  )
+
+  const onReset = useCallback(() => {
+    setDraft(null)
+    setOverrides(EMPTY)
+  }, [])
 
   return (
     <div className="flex h-full w-full flex-col gap-5">
       <TopBar
         days={plan.days}
         today={today}
+        day={day}
         jumps={jumps}
-        playing={replay.playing}
-        speed={replay.speed}
-        subscribe={subscribe}
-        frame={frame}
-        onToggle={toggle}
-        onSpeed={setSpeed}
-        onJump={jumpTo}
+        overrides={overrides.size}
+        onSelectDay={setDay}
+        onPrevDay={prevDay}
+        onNextDay={nextDay}
+        onReset={onReset}
+        onShowYear={() => setShowYear(true)}
       />
 
       <div className="relative flex min-h-0 flex-1 gap-5">
@@ -101,16 +139,18 @@ function Replay({ profile, limits }: { profile: Profile; limits: Limits }) {
           operator={limits.meta.operator}
           defaultLimitMw={limits.meta.defaultLimitMw}
         />
-        <Timeline plan={today} subscribe={subscribe} frame={frame} />
-        <CountersPanel
-          plan={plan}
-          day={day}
-          dayProgress={live.dayProgress}
-          yearProgress={live.yearProgress}
-          settled={replay.finished}
+        <Timeline
+          plan={today}
+          capMw={capMw}
+          minMw={limits.meta.guaranteedMinimumMw}
+          maxMw={limits.meta.defaultLimitMw}
+          overridden={overrides.has(day) || draft?.day === day}
+          onCapDrag={onCapDrag}
+          onCapCommit={onCapCommit}
         />
+        <CountersPanel plan={plan} today={today} />
 
-        {replay.finished ? <EndCard plan={plan} onReplay={restart} /> : null}
+        {showYear ? <EndCard plan={plan} onClose={() => setShowYear(false)} /> : null}
       </div>
 
       <FootNote plan={plan} />
@@ -121,15 +161,18 @@ function Replay({ profile, limits }: { profile: Profile; limits: Limits }) {
 /** Shown only when the greedy rule cannot hold a cap - never hidden, never faked. */
 function FootNote({ plan }: { plan: YearPlan }) {
   if (plan.feasible) return null
+  const shown = plan.infeasible.slice(0, 3)
+  const rest = plan.infeasible.length - shown.length
   return (
     <Surface variant="inset" radius="md" className="shrink-0 px-5 py-3">
       <div className="flex items-center gap-4 text-[13px] font-medium text-warn">
         <Label kind="simulation" className="shrink-0" />
         <span>
           The greedy rule cannot hold the cap on{' '}
-          {plan.infeasible.map((d) => d.date).join(', ')}: short by{' '}
-          {plan.infeasible.map((d) => `${d.deficitMwh.toFixed(2)} MWh`).join(', ')} after a full
-          battery and a {+(MAX_SLOWDOWN * 100).toFixed(1)}% slowdown.
+          {shown.map((d) => d.date).join(', ')}
+          {rest > 0 ? ` and ${rest} more ${rest === 1 ? 'day' : 'days'}` : ''}: short by{' '}
+          {shown.map((d) => `${d.deficitMwh.toFixed(2)} MWh`).join(', ')} after a full battery
+          and a {+(MAX_SLOWDOWN * 100).toFixed(1)}% slowdown.
         </span>
       </div>
     </Surface>
