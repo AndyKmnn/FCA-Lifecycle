@@ -1,195 +1,231 @@
-import { motion } from 'framer-motion'
-import { useEffect, useMemo, useState } from 'react'
-import type { District, Districts, Limits, Profile, Regions } from '../../data'
-import { loadDistricts, loadLimits, loadProfile, loadRegions } from '../../data'
-import { buildDistrictOffers } from '../scene2/districtOffers'
-import { Separator } from '../../design'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Profile, Regions } from '../../data'
+import { loadProfile, loadRegions } from '../../data'
+import { Button, CHART, Surface } from '../../design'
 import type { SceneProps } from '../../shell/types'
-import { UploadStrip } from '../scene2/UploadStrip'
-import { resetTimelines, useTimeline } from '../scene2/useTimeline'
-import { DistrictMap } from './DistrictMap'
-import { EuropeMap } from './EuropeMap'
-import { setSelectedDistrict } from './selection'
+import { UploadStrip } from './UploadStrip'
+import { project } from './germanyStates'
+import { KreisMap } from './KreisMap'
+import { OperatorDetail } from './OperatorDetail'
+import { OperatorList } from './OperatorList'
+import {
+  applyFilters,
+  DEFAULT_FILTERS,
+  loadOperators,
+  withAmendment,
+  type Amendments,
+  type Filters,
+  type Operator,
+  type OperatorFile,
+  type SortKey,
+} from './operators'
 
 const UPLOAD_SEC = 1
-
-/** Scripted beats, ms from the scene's start. */
-const MARKS = [
-  1100, // 1 upload finished - Europe is on screen, Germany picked out
-  1700, // 2 zoom into Germany: the districts
-  2300, // 3 district labels land, the presenter can pick one
-] as const
-
-const MAP_HEIGHT = 560
+const MAP_HEIGHT = 700
 
 /**
- * Scene 1 - Where can this connect. Owned by the demo12 track.
+ * The connection explorer: where this site can connect, and on what terms.
  *
- * The site's profile uploads, Europe resolves to Germany, and Germany resolves
- * to the grid operator districts that would write the connection. Clicking a
- * district records the choice and moves on to comparing their offers.
+ * Three panes that all move together. The filters narrow the database, the map
+ * repaints to whatever survived, and the detail panel takes the terms apart and
+ * lets them be rewritten - with the hours, the megawatt-hours and the euros
+ * recomputing against the site's own profile as they are.
+ *
+ * This replaced two scenes. The old scene 1 was a map of four operator
+ * districts with nothing to do on it; the old scene 2 dealt four cards and
+ * typed a term sheet. Neither let anybody ask their own question, which is the
+ * only thing a room full of connection seekers wants to do.
  */
 export default function Scene1({ onAdvance }: SceneProps) {
   const [data, setData] = useState<{
     profile: Profile
     regions: Regions
-    districts: Districts
-    limits: Limits
+    file: OperatorFile
   } | null>(null)
-  const [picked, setPicked] = useState<string | null>(null)
-  /** Nothing moves until the presenter has put a profile in. */
-  const [fileName, setFileName] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    setSelectedDistrict(null)
-    resetTimelines()
     let live = true
-    Promise.all([loadProfile(), loadRegions(), loadDistricts(), loadLimits()]).then(
-      ([profile, regions, districts, limits]) => {
-        if (live) setData({ profile, regions, districts, limits })
-      },
-    )
+    Promise.all([loadProfile(), loadRegions(), loadOperators()])
+      .then(([profile, regions, file]) => {
+        if (live) setData({ profile, regions, file })
+      })
+      .catch((e: unknown) => {
+        if (live) setError(e instanceof Error ? e.message : String(e))
+      })
     return () => {
       live = false
     }
   }, [])
 
-  /**
-   * Where each district's cost of the cap falls between the cheapest and the
-   * dearest, which is what colours the map.
-   *
-   * The same engine scene 2 uses, so the map and the cards can never disagree.
-   * Banded on distinct costs rather than on rank: two districts that write the
-   * same cap cost the same and are coloured the same, which is the honest
-   * answer even though it leaves the four districts in three colours.
-   */
-  const heat = useMemo(() => {
-    if (!data) return undefined
-    const offers = buildDistrictOffers(data.profile, data.limits, data.districts)
-    const distinct = [...new Set(offers.map((o) => o.result.costEur))].sort((a, b) => a - b)
-    const out: Record<string, number> = {}
-    for (const o of offers)
-      out[o.district.id] =
-        distinct.length <= 1 ? 0 : distinct.indexOf(o.result.costEur) / (distinct.length - 1)
-    return out
-  }, [data])
+  if (error)
+    return (
+      <Surface className="flex h-full w-full items-center justify-center p-16">
+        <p className="text-xl text-muted-foreground">Could not load the data: {error}</p>
+      </Surface>
+    )
+  if (!data) return <div className="h-full w-full" />
+  return <Explorer {...data} onAdvance={onAdvance} />
+}
+
+function Explorer({
+  profile,
+  regions,
+  file,
+  onAdvance,
+}: {
+  profile: Profile
+  regions: Regions
+  file: OperatorFile
+  onAdvance: () => void
+}) {
+  const [fileName, setFileName] = useState<string | null>(null)
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
+  const [sort, setSort] = useState<SortKey>('months')
+  const [selectedId, setSelectedId] = useState<string | null>(file.meta.homeId)
+  const [amendments, setAmendments] = useState<Amendments>(() => new Map())
 
   const started = fileName !== null
-  const stage = useTimeline(MARKS, 'scene1', data !== null && started)
 
-  if (!data) return <div className="h-full w-full" />
+  const byId = useMemo(() => {
+    const m = new Map<string, Operator>()
+    for (const o of file.operators) m.set(o.id, withAmendment(o, amendments))
+    return m
+  }, [file.operators, amendments])
 
-  const choose = (d: District) => {
-    setPicked(d.id)
-    setSelectedDistrict(d.id)
-    window.setTimeout(onAdvance, 450)
-  }
+  const originals = useMemo(() => {
+    const m = new Map<string, Operator>()
+    for (const o of file.operators) m.set(o.id, o)
+    return m
+  }, [file.operators])
 
-  const zoomed = stage >= 2
+  const rows = useMemo(
+    () => applyFilters(file.operators, filters, sort, amendments),
+    [file.operators, filters, sort, amendments],
+  )
+
+  const matched = useMemo(() => new Set(rows.map((o) => o.id)), [rows])
+  const amendedIds = useMemo(() => new Set(amendments.keys()), [amendments])
+
+  const site = useMemo(() => project(regions.site.lon, regions.site.lat), [regions.site])
+
+  const amend = useCallback(
+    (patch: Partial<Operator>) => {
+      if (!selectedId) return
+      setAmendments((current) => {
+        const next = new Map(current)
+        next.set(selectedId, { ...next.get(selectedId), ...patch })
+        return next
+      })
+    },
+    [selectedId],
+  )
+
+  const resetSelected = useCallback(() => {
+    if (!selectedId) return
+    setAmendments((current) => {
+      const next = new Map(current)
+      next.delete(selectedId)
+      return next
+    })
+  }, [selectedId])
+
+  const selected = selectedId ? (byId.get(selectedId) ?? null) : null
+  const original = selectedId ? (originals.get(selectedId) ?? null) : null
 
   return (
-    <div className="flex h-full w-full flex-col gap-6">
+    <div className="flex h-full w-full flex-col gap-5">
       <UploadStrip
-        profile={data.profile}
-        uploaded={stage >= 1}
+        profile={profile}
+        uploaded={started}
         durationSec={UPLOAD_SEC}
         fileName={fileName}
         onPick={setFileName}
       />
 
-      <div className="flex min-h-0 flex-1 items-stretch gap-12">
-        <div className="flex w-[560px] shrink-0 flex-col justify-center">
-          <span className="micro text-muted-foreground">Node screening</span>
-          <h2 className="mt-4 text-[52px] leading-[1.05] font-semibold tracking-[-0.03em] text-foreground">
-            Where can this connect?
-          </h2>
-          <p className="mt-5 text-xl leading-relaxed text-muted-foreground">
-            {started
-              ? 'Public asset registers and grid expansion plans, screened into candidate nodes - and the operator whose district each one sits in.'
-              : "Start with the site's own year of 15-minute meter data. Everything after it - which cap the site can live with, and what that cap costs - is read off this one file."}
-          </p>
-
-          <Separator className="mt-9" />
-
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={stage >= 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-8"
-          >
-            <div className="text-lg text-muted-foreground">
-              Four operators would write this connection, on different terms and different
-              timelines.
-            </div>
-            <p className="mt-5 text-base font-medium text-foreground">
-              Click a district to compare what they offer.
-            </p>
-
-            <div className="mt-6 flex items-center gap-4 text-[12px] text-muted-foreground">
-              <span className="micro">Cost of the cap</span>
-              <span className="inline-flex items-center gap-2">
-                <Swatch color="var(--chart-4)" /> lowest
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <Swatch color="var(--chart-5)" /> middle
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <Swatch color="var(--destructive)" /> highest
+      {started ? (
+        <div className="flex min-h-0 flex-1 gap-5">
+          <Surface className="flex min-h-0 shrink-0 flex-col p-5">
+            <div className="flex items-baseline justify-between gap-4">
+              <h3 className="text-[17px] font-semibold tracking-[-0.02em] text-foreground">
+                Where it can connect
+              </h3>
+              <span className="tabular text-[13px] text-muted-foreground">
+                {matched.size} Kreise
               </span>
             </div>
-          </motion.div>
 
-          <p className="mt-auto pt-8 text-[12px] text-muted-foreground">
-            Outlines: Natural Earth (public domain) and deutschlandGeoJSON (The Unlicense),
-            derived from DIVA-GIS country data.
-          </p>
-        </div>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
+              <span className="micro">Connected in</span>
+              <Swatch color={CHART.ok} /> under a year
+              <Swatch color={CHART.warn} /> under two
+              <Swatch color="var(--destructive)" /> longer
+              <Swatch color="var(--muted)" /> no FCA
+            </div>
 
-        <div className="relative flex flex-1 items-center justify-center">
-          <motion.div
-            className="absolute"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={
-              !started
-                ? { opacity: 0, scale: 0.98 }
-                : zoomed
-                  ? { opacity: 0, scale: 1.9 }
-                  : { opacity: 1, scale: 1 }
-            }
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            style={{ pointerEvents: 'none' }}
-          >
-            <EuropeMap height={MAP_HEIGHT} />
-          </motion.div>
+            <div className="mt-2 flex min-h-0 flex-1 items-center justify-center">
+              <KreisMap
+                operators={byId}
+                matched={matched}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                site={site}
+                homeId={file.meta.homeId}
+                height={MAP_HEIGHT}
+              />
+            </div>
+          </Surface>
 
-          <motion.div
-            className="absolute"
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={zoomed ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.85 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <DistrictMap
-              regions={data.regions}
-              districts={data.districts}
-              showLabels={stage >= 3}
-              selectedId={picked}
-              onSelect={choose}
-              heat={stage >= 3 ? heat : undefined}
-              height={MAP_HEIGHT + 110}
+          <OperatorList
+            rows={rows}
+            total={file.operators.length}
+            filters={filters}
+            sort={sort}
+            selectedId={selectedId}
+            amendedIds={amendedIds}
+            onFilters={setFilters}
+            onSort={setSort}
+            onSelect={setSelectedId}
+          />
+
+          <div className="flex min-h-0 flex-col gap-4">
+            <OperatorDetail
+              operator={selected}
+              original={original}
+              profile={profile}
+              amended={selectedId ? amendments.has(selectedId) : false}
+              onAmend={amend}
+              onReset={resetSelected}
             />
-          </motion.div>
+            <Button size="xl" onClick={onAdvance} className="shrink-0">
+              See it operate
+            </Button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 items-center">
+          <div className="w-[720px]">
+            <span className="micro text-muted-foreground">Node screening</span>
+            <h2 className="mt-4 text-[52px] leading-[1.05] font-semibold tracking-[-0.03em] text-foreground">
+              Where can this connect?
+            </h2>
+            <p className="mt-5 text-xl leading-relaxed text-muted-foreground">
+              Start with the site&rsquo;s own year of 15-minute meter data. Everything after it -
+              which of the operators would write this connection, what cap each would set, and
+              what that cap costs - is read off this one file.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-/** One band of the map's cost scale. */
 function Swatch({ color }: { color: string }) {
   return (
     <span
       aria-hidden
-      className="h-2.5 w-4 rounded-[2px] border border-border"
+      className="inline-block h-2.5 w-4 rounded-[2px] border border-border"
       style={{ background: color, opacity: 0.55 }}
     />
   )

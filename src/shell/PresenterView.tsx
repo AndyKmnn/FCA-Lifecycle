@@ -3,14 +3,12 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Chip, Separator, Stepper, Wordmark } from '../design'
 import Scene1 from '../demo/scene1/Scene1'
-import Scene2 from '../demo/scene2/Scene2'
 import Scene3 from '../demo/scene3/Scene3'
 import { Stage } from './Stage'
 import type { SceneProps } from './types'
 
 const SCENES: Array<{ label: string; Component: (props: SceneProps) => React.ReactElement }> = [
   { label: 'Where to connect', Component: Scene1 },
-  { label: 'On what terms', Component: Scene2 },
   { label: 'Holding the cap', Component: Scene3 },
 ]
 

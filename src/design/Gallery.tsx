@@ -141,7 +141,7 @@ export function Gallery() {
 
         <Section eyebrow="06" title="Stepper">
           <Stepper
-            steps={['Where to connect', 'On what terms', 'Holding the cap']}
+            steps={['Where to connect', 'Holding the cap']}
             current={step}
             onSelect={setStep}
           />
