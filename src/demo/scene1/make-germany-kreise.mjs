@@ -320,6 +320,122 @@ Object.assign(home, {
   fcaFromYear: 2025,
 })
 
+/* ---------------------------------------------------------------- the nodes
+ *
+ * Substations, and the queue standing at each of them.
+ *
+ * This is the layer nobody can look up. Free capacity per node becomes public
+ * on 1 January 2028, when the Netzanschlusspaket's capacity maps oblige
+ * operators to publish connection information for anything from 135 kW up.
+ * The queue does not become public at all: Germany, unlike the US, has no
+ * published interconnection queue, so who is standing in front of you is
+ * knowable only to the operator - and to whoever has filed enough requests to
+ * have reconstructed it.
+ *
+ * Every applicant has a statutory right to be told the free capacity at their
+ * site, the capacity after planned expansion, and their rank in the queue. The
+ * database is therefore a by-product of the deal flow: one disclosure per
+ * application, accumulated.
+ *
+ * Generated from the Kreis id like everything else, so it is stable.
+ */
+
+const NODE_SUFFIX = ['Nord', 'Ost', 'Sued', 'West', 'Mitte']
+/** What actually queues for multi-megawatt capacity in Germany right now. */
+const APPLICANT_KIND = [
+  { kind: 'battery', label: 'Batteriespeicher', lo: 8, hi: 60, speculative: 0.55 },
+  { kind: 'datacentre', label: 'Rechenzentrum', lo: 10, hi: 120, speculative: 0.18 },
+  { kind: 'electrolyser', label: 'Elektrolyseur', lo: 5, hi: 40, speculative: 0.45 },
+  { kind: 'industrial', label: 'Industriebetrieb', lo: 3, hi: 25, speculative: 0.1 },
+  { kind: 'charging', label: 'Ladepark', lo: 2, hi: 12, speculative: 0.2 },
+]
+
+const nodes = []
+for (const k of out) {
+  const r = rngFor(`${k.id}|nodes`)
+  const count = k.urban ? 1 + Math.floor(r() * 3) : 1 + Math.floor(r() * 2)
+
+  for (let i = 0; i < count; i++) {
+    const nr = rngFor(`${k.id}|node${i}`)
+    const headroomMw = between(nr, 0.5, k.urban ? 18 : 34)
+
+    /** Applications filed and not yet built - the invisible part. */
+    const queue = []
+    const queueLength = Math.floor(nr() * 6)
+    for (let q = 0; q < queueLength; q++) {
+      const spec = APPLICANT_KIND[Math.floor(nr() * APPLICANT_KIND.length)]
+      const month = Math.floor(nr() * 30)
+      queue.push({
+        kind: spec.kind,
+        label: spec.label,
+        mw: +between(nr, spec.lo, spec.hi, 0).toFixed(0),
+        // Filed some time in the last two and a half years.
+        filed: `${2024 + Math.floor(month / 12)}-${String((month % 12) + 1).padStart(2, '0')}`,
+        // A filing with no site control and no offtake behind it. Under pure
+        // first-come-first-served it still holds the place it took.
+        speculative: nr() < spec.speculative,
+      })
+    }
+    queue.sort((a, b) => a.filed.localeCompare(b.filed))
+
+    nodes.push({
+      id: `${k.id}-n${i}`,
+      kreisId: k.id,
+      name: `${k.name}${count > 1 ? '-' + NODE_SUFFIX[i] : ''}`,
+      voltageLevel: nr() < 0.25 ? '110/20 kV' : '20/0,4 kV',
+      headroomMw,
+      queuedMw: +queue.reduce((a, x) => a + x.mw, 0).toFixed(0),
+      queue,
+    })
+  }
+}
+
+/**
+ * The node the site connects to is scripted, not rolled.
+ *
+ * It is the one the presenter opens, and it has to demonstrate the thing the
+ * layer exists to show: that the order of the queue is about to change. A
+ * randomly drawn queue with no speculative filings in it reorders to itself
+ * under section 17b and the point lands on nothing.
+ *
+ * The shape here is the one the reform is aimed at - two speculative filings
+ * holding places ahead of a project with an offtake behind it.
+ */
+const homeNode = nodes.find((n) => n.kreisId === HOME_ID)
+if (homeNode) {
+  homeNode.name = 'Freising-Ost'
+  homeNode.voltageLevel = '110/20 kV'
+  homeNode.headroomMw = 14.2
+  homeNode.queue = [
+    { kind: 'battery', label: 'Batteriespeicher', mw: 20, filed: '2024-03', speculative: true },
+    { kind: 'datacentre', label: 'Rechenzentrum', mw: 18, filed: '2024-11', speculative: false },
+    { kind: 'battery', label: 'Batteriespeicher', mw: 30, filed: '2025-01', speculative: true },
+    { kind: 'electrolyser', label: 'Elektrolyseur', mw: 8, filed: '2025-02', speculative: false },
+  ]
+  homeNode.queuedMw = homeNode.queue.reduce((a, x) => a + x.mw, 0)
+}
+
+fs.writeFileSync(
+  'public/data/nodes.json',
+  JSON.stringify({
+    meta: {
+      note:
+        'Substations and the applications queued at each. Free capacity per node becomes ' +
+        'publishable in Germany on 1 January 2028 under the Netzanschlusspaket; the queue ' +
+        'itself is never published. Constructed.',
+      count: nodes.length,
+      year: 2026,
+    },
+    nodes,
+  }),
+)
+
+const totalQueued = nodes.reduce((a, n) => a + n.queue.length, 0)
+const spec = nodes.reduce((a, n) => a + n.queue.filter((q) => q.speculative).length, 0)
+console.log(
+  `nodes ${nodes.length} | queue entries ${totalQueued} | speculative ${spec} (${Math.round((spec / totalQueued) * 100)}%)`,
+)
+
 const json = {
   meta: {
     homeId: HOME_ID,
