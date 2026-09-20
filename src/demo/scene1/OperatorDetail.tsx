@@ -273,6 +273,15 @@ export function OperatorDetail({
             />
           </div>
 
+          {result && result.hours === 0 ? (
+            <p className="mt-4 text-[13px] leading-relaxed font-medium text-ok">
+              The cap never binds: it sits at or above this site&rsquo;s{' '}
+              {profile.meta.peakMw.toFixed(2)} MW peak, so the connection is flexible on paper
+              and firm in practice. Pull the cap down to find the level where that stops being
+              true.
+            </p>
+          ) : null}
+
           {result && result.hours > operator.maxCurtailmentHours ? (
             <p className="mt-4 text-[13px] leading-relaxed font-medium text-warn">
               This cap would curtail {Math.round(result.hours).toLocaleString('en-GB')} hours, above

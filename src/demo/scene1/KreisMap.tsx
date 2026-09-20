@@ -14,6 +14,10 @@ import type { Operator } from './operators'
  *
  * 434 plain paths with a CSS transition, deliberately. Wrapping each in a
  * motion component costs more than the animation is worth at this count.
+ *
+ * The map takes no height. It scales into whatever box the layout leaves it,
+ * because a map that measures itself will sooner or later be taller than the
+ * space above the fold - and then it slides out of its own panel.
  */
 
 /** Green inside a year, orange inside two, red beyond. */
@@ -31,7 +35,6 @@ export interface KreisMapProps {
   /** The connection seeker's own site, in map units. */
   site?: { x: number; y: number } | null
   homeId?: string
-  height: number
 }
 
 function KreisMapInner({
@@ -41,10 +44,7 @@ function KreisMapInner({
   onSelect,
   site,
   homeId,
-  height,
 }: KreisMapProps) {
-  const width = (height * MAP_WIDTH) / MAP_HEIGHT
-
   const shapes = useMemo(
     () =>
       KREISE.map((k) => {
@@ -66,8 +66,8 @@ function KreisMapInner({
   return (
     <svg
       viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
-      width={width}
-      height={height}
+      preserveAspectRatio="xMidYMid meet"
+      className="h-full w-full"
       role="img"
       aria-label="German Kreise, coloured by how quickly each operator connects"
     >

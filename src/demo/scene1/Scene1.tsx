@@ -24,7 +24,6 @@ import {
 } from './operators'
 
 const UPLOAD_SEC = 1
-const MAP_HEIGHT = 700
 
 /**
  * The connection explorer: where this site can connect, and on what terms.
@@ -182,7 +181,7 @@ function Explorer({
             onSelect={setSelectedId}
           />
 
-          <Surface className="flex min-h-0 shrink-0 flex-col p-5">
+          <Surface className="flex min-h-0 w-[620px] shrink-0 flex-col p-5">
             <div className="flex items-baseline justify-between gap-4">
               <h3 className="text-[17px] font-semibold tracking-[-0.02em] text-foreground">
                 Where it can connect
@@ -200,7 +199,7 @@ function Explorer({
               <Swatch color="var(--muted)" /> no FCA
             </div>
 
-            <div className="mt-4 rounded-md border border-border bg-muted/40 px-3 py-2.5">
+            <div className="mt-4 shrink-0 rounded-md border border-border bg-muted px-3 py-2.5">
               <label className="block">
                 <span className="flex items-baseline justify-between">
                   <span className="micro text-muted-foreground">
@@ -234,7 +233,7 @@ function Explorer({
               </p>
             </div>
 
-            <div className="mt-3 flex min-h-0 flex-1 items-center justify-center">
+            <div className="mt-3 min-h-0 flex-1">
               <KreisMap
                 operators={byId}
                 matched={matched}
@@ -242,7 +241,6 @@ function Explorer({
                 onSelect={setSelectedId}
                 site={site}
                 homeId={file.meta.homeId}
-                height={MAP_HEIGHT}
               />
             </div>
           </Surface>
