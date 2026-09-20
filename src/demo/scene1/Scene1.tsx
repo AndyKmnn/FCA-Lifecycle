@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
-import type { District, Districts, Profile, Regions } from '../../data'
-import { loadDistricts, loadProfile, loadRegions } from '../../data'
+import { useEffect, useMemo, useState } from 'react'
+import type { District, Districts, Limits, Profile, Regions } from '../../data'
+import { loadDistricts, loadLimits, loadProfile, loadRegions } from '../../data'
+import { buildDistrictOffers } from '../scene2/districtOffers'
 import { Label, Separator } from '../../design'
 import type { SceneProps } from '../../shell/types'
 import { UploadStrip } from '../scene2/UploadStrip'
@@ -33,6 +34,7 @@ export default function Scene1({ onAdvance }: SceneProps) {
     profile: Profile
     regions: Regions
     districts: Districts
+    limits: Limits
   } | null>(null)
   const [picked, setPicked] = useState<string | null>(null)
   /** Nothing moves until the presenter has put a profile in. */
@@ -42,15 +44,35 @@ export default function Scene1({ onAdvance }: SceneProps) {
     setSelectedDistrict(null)
     resetTimelines()
     let live = true
-    Promise.all([loadProfile(), loadRegions(), loadDistricts()]).then(
-      ([profile, regions, districts]) => {
-        if (live) setData({ profile, regions, districts })
+    Promise.all([loadProfile(), loadRegions(), loadDistricts(), loadLimits()]).then(
+      ([profile, regions, districts, limits]) => {
+        if (live) setData({ profile, regions, districts, limits })
       },
     )
     return () => {
       live = false
     }
   }, [])
+
+  /**
+   * Where each district's cost of the cap falls between the cheapest and the
+   * dearest, which is what colours the map.
+   *
+   * The same engine scene 2 uses, so the map and the cards can never disagree.
+   * Banded on distinct costs rather than on rank: two districts that write the
+   * same cap cost the same and are coloured the same, which is the honest
+   * answer even though it leaves the four districts in three colours.
+   */
+  const heat = useMemo(() => {
+    if (!data) return undefined
+    const offers = buildDistrictOffers(data.profile, data.limits, data.districts)
+    const distinct = [...new Set(offers.map((o) => o.result.costEur))].sort((a, b) => a - b)
+    const out: Record<string, number> = {}
+    for (const o of offers)
+      out[o.district.id] =
+        distinct.length <= 1 ? 0 : distinct.indexOf(o.result.costEur) / (distinct.length - 1)
+    return out
+  }, [data])
 
   const started = fileName !== null
   const stage = useTimeline(MARKS, 'scene1', data !== null && started)
@@ -105,6 +127,19 @@ export default function Scene1({ onAdvance }: SceneProps) {
             <p className="mt-5 text-base font-medium text-foreground">
               Click a district to compare what they offer.
             </p>
+
+            <div className="mt-6 flex items-center gap-4 text-[12px] text-muted-foreground">
+              <span className="micro">Cost of the cap</span>
+              <span className="inline-flex items-center gap-2">
+                <Swatch color="var(--chart-4)" /> lowest
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <Swatch color="var(--chart-5)" /> middle
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <Swatch color="var(--destructive)" /> highest
+              </span>
+            </div>
           </motion.div>
 
           <p className="mt-auto pt-8 text-[12px] text-muted-foreground">
@@ -142,11 +177,23 @@ export default function Scene1({ onAdvance }: SceneProps) {
               showLabels={stage >= 3}
               selectedId={picked}
               onSelect={choose}
+              heat={stage >= 3 ? heat : undefined}
               height={MAP_HEIGHT + 110}
             />
           </motion.div>
         </div>
       </div>
     </div>
+  )
+}
+
+/** One band of the map's cost scale. */
+function Swatch({ color }: { color: string }) {
+  return (
+    <span
+      aria-hidden
+      className="h-2.5 w-4 rounded-[2px] border border-border"
+      style={{ background: color, opacity: 0.55 }}
+    />
   )
 }

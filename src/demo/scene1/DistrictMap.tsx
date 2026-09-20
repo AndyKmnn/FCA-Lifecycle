@@ -6,9 +6,20 @@ import { MAP_HEIGHT, MAP_WIDTH, STATE_PATHS, project } from './germanyStates'
 /**
  * Germany's federal states, grouped into grid operator districts.
  *
- * Flat by design. Districts are told apart by tint of one ink, so amber stays
- * free to mark the single thing that matters: the district the presenter picks.
+ * Flat by design. Districts carry what the cap would cost this site - green
+ * where it costs least, red where it costs most - so the map answers "where"
+ * before anyone reads a number. Amber stays free for the one thing it always
+ * means: the district the presenter has picked.
+ *
+ * Three bands, not a continuous ramp. Four districts cannot carry a gradient,
+ * and the tokens are CSS variables that cannot be interpolated without
+ * hard-coding the hex values the design system forbids.
  */
+const HEAT = [CHART.ok, CHART.warn, 'var(--destructive)'] as const
+const bandOf = (t: number) => HEAT[t < 0.34 ? 0 : t < 0.67 ? 1 : 2]
+/** Light enough that the district labels stay readable on top. */
+const HEAT_OPACITY = 0.34
+/** Fallback tint while the costs are still being computed. */
 const TINTS = [0.1, 0.22, 0.34, 0.46]
 
 export interface DistrictMapProps {
@@ -19,6 +30,11 @@ export interface DistrictMapProps {
   selectedId: string | null
   onSelect: (district: District) => void
   height: number
+  /**
+   * Per district id, where its cost of the cap falls between the cheapest
+   * district (0) and the dearest (1). Absent until the figures are in.
+   */
+  heat?: Record<string, number>
 }
 
 export function DistrictMap({
@@ -28,6 +44,7 @@ export function DistrictMap({
   selectedId,
   onSelect,
   height,
+  heat,
 }: DistrictMapProps) {
   const width = (height * MAP_WIDTH) / MAP_HEIGHT
   const site = project(regions.site.lon, regions.site.lat)
@@ -79,8 +96,16 @@ export function DistrictMap({
                 strokeWidth={1.25}
                 strokeLinejoin="round"
                 animate={{
-                  fill: selected ? CHART.accent : CHART.series,
-                  fillOpacity: selected ? 0.85 : TINTS[i % TINTS.length],
+                  fill: selected
+                    ? CHART.accent
+                    : heat?.[d.id] !== undefined
+                      ? bandOf(heat[d.id])
+                      : CHART.series,
+                  fillOpacity: selected
+                    ? 0.85
+                    : heat?.[d.id] !== undefined
+                      ? HEAT_OPACITY
+                      : TINTS[i % TINTS.length],
                 }}
                 transition={{ duration: 0.35 }}
               />

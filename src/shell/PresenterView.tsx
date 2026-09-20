@@ -9,9 +9,9 @@ import { Stage } from './Stage'
 import type { SceneProps } from './types'
 
 const SCENES: Array<{ label: string; Component: (props: SceneProps) => React.ReactElement }> = [
-  { label: 'Headroom map', Component: Scene1 },
-  { label: 'Upload and term sheet', Component: Scene2 },
-  { label: 'Autopilot replay', Component: Scene3 },
+  { label: 'Where to connect', Component: Scene1 },
+  { label: 'On what terms', Component: Scene2 },
+  { label: 'Holding the cap', Component: Scene3 },
 ]
 
 const STEP_LABELS = SCENES.map((s) => s.label)
