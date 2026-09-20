@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Card, Chip, Counter, Label } from '../../design'
+import { Card, Chip, Counter } from '../../design'
 import type { DistrictOffer } from './districtOffers'
 
 export interface DistrictCardProps {
@@ -94,7 +94,6 @@ export function DistrictCard({ offer, show, showBadge, picked }: DistrictCardPro
             hint={`${result.sharePct.toFixed(1)} % of annual energy`}
           />
         </div>
-        <Label kind="assumption" note="margin 250 EUR/MWh" className="mt-4" />
       </Card>
     </motion.div>
   )

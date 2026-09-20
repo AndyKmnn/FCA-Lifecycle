@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { District, Districts, Limits, Profile, Regions } from '../../data'
 import { loadDistricts, loadLimits, loadProfile, loadRegions } from '../../data'
 import { buildDistrictOffers } from '../scene2/districtOffers'
-import { Label, Separator } from '../../design'
+import { Separator } from '../../design'
 import type { SceneProps } from '../../shell/types'
 import { UploadStrip } from '../scene2/UploadStrip'
 import { resetTimelines, useTimeline } from '../scene2/useTimeline'
@@ -109,10 +109,7 @@ export default function Scene1({ onAdvance }: SceneProps) {
               : "Start with the site's own year of 15-minute meter data. Everything after it - which cap the site can live with, and what that cap costs - is read off this one file."}
           </p>
 
-          {/* Covers the months-to-connect on the map: seeded demo values, not quotes. */}
-          <Label kind="simulation" note="illustrative" className="mt-7 self-start" />
-
-          <Separator className="mt-8" />
+          <Separator className="mt-9" />
 
           <motion.div
             initial={{ opacity: 0, y: 8 }}

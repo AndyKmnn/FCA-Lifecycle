@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Button, Counter, Label, Stat, Surface } from '../../design'
+import { Button, Counter, Stat, Surface } from '../../design'
 import { END_CARD_HEADLINE, END_CARD_SUBHEAD, MONTHS_SKIPPED } from './script'
 import type { YearPlan } from './replan'
 
@@ -30,8 +30,7 @@ export function EndCard({ plan, onClose }: EndCardProps) {
       <Surface className="relative flex w-[1000px] flex-col items-center overflow-hidden px-16 py-14">
         <div aria-hidden className="rule-grid pointer-events-none absolute inset-0 opacity-30" />
         <div className="relative flex flex-col items-center">
-          <Label kind="simulation" />
-          <h2 className="mt-7 text-center text-[52px] leading-[1.1] font-semibold tracking-[-0.03em] text-foreground">
+          <h2 className="text-center text-[52px] leading-[1.1] font-semibold tracking-[-0.03em] text-foreground">
             {END_CARD_HEADLINE}
             <br />
             {clean ? (

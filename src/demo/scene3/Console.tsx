@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react'
-import { Label, Surface } from '../../design'
+import { Surface } from '../../design'
 import { hhmm, mw, mwh } from './format'
 import type { DayPlan } from './replan'
 
@@ -36,7 +36,6 @@ function ConsoleInner({ days, day, operator, defaultLimitMw }: ConsoleProps) {
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">Day-ahead limit feed</p>
         </div>
-        <Label kind="simulation" className="shrink-0" />
       </div>
 
       <Surface

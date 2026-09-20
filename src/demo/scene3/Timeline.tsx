@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { CHART, Chip, Label, Surface } from '../../design'
+import { CHART, Chip, Surface } from '../../design'
 import { STEPS_PER_DAY, type DayPlan } from './replan'
 
 /**
@@ -235,7 +235,6 @@ function TimelineInner({
             <Chip className="text-warn">Below the guaranteed {guaranteedMw.toFixed(1)} MW</Chip>
           ) : null}
           {overridden ? <Chip selected>Manual override</Chip> : null}
-          <Label kind="simulation" />
         </div>
       </div>
 

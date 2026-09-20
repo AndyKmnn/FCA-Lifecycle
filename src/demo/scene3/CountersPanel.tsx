@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Label, Stat, Surface } from '../../design'
+import { Stat, Surface } from '../../design'
 import { eurMillions, mwh } from './format'
 import { FCA_MONTHS, MONTHS_SKIPPED, WAIT_MONTHS } from './script'
 import type { DayPlan, YearPlan } from './replan'
@@ -32,7 +32,6 @@ export function CountersPanel({ plan, today }: CountersPanelProps) {
         <h3 className="text-[19px] font-semibold tracking-[-0.02em] text-foreground">
           The year
         </h3>
-        <Label kind="simulation" className="shrink-0" />
       </div>
 
       <div className="mt-4 flex flex-1 flex-col gap-3">

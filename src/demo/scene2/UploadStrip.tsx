@@ -1,7 +1,7 @@
 import { animate, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import type { Profile } from '../../data'
-import { Button, Counter, Label, Progress, Separator, Surface } from '../../design'
+import { Button, Counter, Progress, Separator, Surface } from '../../design'
 import { LoadCurve } from './LoadCurve'
 
 export interface UploadStripProps {
@@ -52,7 +52,7 @@ function Fact({
  * and its name is shown. What it contains is not read. The profile behind every
  * figure on screen is always the same seeded synthetic year from
  * public/data/profile.json, which is what keeps the demo identical at every
- * pitch, and it is labelled as a simulation throughout.
+ * pitch.
  *
  * That is a deliberate prop, not an unfinished feature: this scene is there to
  * show what happens *after* a profile is in, and a real parser would put the
@@ -122,7 +122,6 @@ export function UploadStrip({
             }}
           />
         </div>
-        <Label kind="simulation" className="shrink-0" />
       </Surface>
     )
   }
@@ -163,8 +162,6 @@ export function UploadStrip({
           <LoadCurve values={profile.values} className="mt-2 h-[42px] w-[210px]" />
         </div>
       </motion.div>
-
-      <Label kind="simulation" className="shrink-0" />
     </Surface>
   )
 }

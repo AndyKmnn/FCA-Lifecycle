@@ -91,8 +91,11 @@ Font is Geist Variable, self-hosted via `@fontsource-variable/geist`. **Never ad
   loaders. No CDN, no Google Fonts, no analytics.
 - **Deterministic.** No `Math.random()`, no `new Date()` driving anything visible. The data is
   pre-seeded; the same run must look identical tomorrow.
-- **Label every figure.** Any simulated or proxy number carries `<Label kind="simulation" />`,
-  `kind="proxy"` or `kind="assumption"`. This is a hard rule from CLAUDE.md.
+- **Label sparingly.** The scenario is established once, at the start; after that the interface
+  behaves like the real product. `<Label kind="simulation" />`, `kind="proxy"` and
+  `kind="assumption"` are for the rare figure that would otherwise be read as sourced market
+  data - a headroom estimate, an assumed margin. One per screen at most, and usually none. A
+  panel covered in badges reads as a prototype apologising for itself. See CLAUDE.md.
 - **Do not change existing copy.** Site text comes from `docs/PRODUCT.md`, demo figures from
   `docs/DEMO_SCRIPT.md`. Restyle freely; do not rewrite words.
 - **No investor material on the site.** No business model, revenue, moat, competition, market

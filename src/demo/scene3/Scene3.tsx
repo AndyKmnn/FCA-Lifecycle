@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Label, Surface } from '../../design'
+import { Surface } from '../../design'
 import { dayIndex, loadLimits, loadProfile, type Limits, type Profile } from '../../data'
 import { Console } from './Console'
 import { CountersPanel } from './CountersPanel'
@@ -178,7 +178,6 @@ function FootNote({ plan }: { plan: YearPlan }) {
   return (
     <Surface variant="inset" radius="md" className="shrink-0 px-5 py-3">
       <div className="flex items-center gap-4 text-[13px] font-medium text-warn">
-        <Label kind="simulation" className="shrink-0" />
         <span>
           The greedy rule cannot hold the cap on{' '}
           {shown.map((d) => d.date).join(', ')}

@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Districts, Limits, Profile } from '../../data'
 import { loadDistricts, loadLimits, loadProfile } from '../../data'
-import { Button, Label, Separator, Surface } from '../../design'
+import { Button, Surface } from '../../design'
 import type { SceneProps } from '../../shell/types'
 import { getSelectedDistrict } from '../scene1/selection'
 import { DistrictCard } from './DistrictCard'
@@ -133,9 +133,6 @@ export default function Scene2({ onAdvance }: SceneProps) {
           </div>
 
           <div className="flex w-[260px] shrink-0 flex-col items-end gap-4 self-stretch">
-            <Label kind="simulation" />
-            <Label kind="assumption" note="margin 250 EUR/MWh" />
-            <Separator className="my-1" />
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: typed ? 1 : 0 }}

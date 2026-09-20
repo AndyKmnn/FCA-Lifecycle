@@ -2,21 +2,43 @@
 
 Demo website for a live pitch. Speed and reliability beat completeness.
 
+## What this is for
+
+**The demo has to land as impressive.** Someone who knows nothing about flexible connection
+agreements should watch it and want the thing. That is the goal, ahead of completeness and
+ahead of caveats.
+
+So it has to feel like the product, not like a slide deck about the product. It should show
+what we will plausibly be able to do, built as if it already worked - the presenter answers
+"do you have this today?" out loud, in the room. The screen does not hedge on their behalf.
+
 ## Non-negotiables
 
 - **Demo only.** The site must run **offline** and **deterministically**: no backend, no login,
   no network calls at runtime, no random values without a fixed seed. Every run of the demo looks
   identical.
-- **No invented facts.** All site copy comes from `docs/PRODUCT.md`. All demo numbers come from
-  `docs/DEMO_SCRIPT.md` and the generated data in `public/data/`. If something is not in those
-  files, do not put it on screen.
+- **Figures are computed, not typed.** Numbers on screen come from `public/data/` through the
+  engines in `src/demo/*/`, and copy comes from `docs/PRODUCT.md` and `docs/DEMO_SCRIPT.md`.
+  This is not about accuracy for its own sake - it is that hand-written figures contradict each
+  other the moment somebody compares two screens, and a demo that does not add up stops being
+  impressive. Inventing a new *scenario* is fine; inventing a number that the rest of the
+  screen then disagrees with is not.
+- **Never claim a capability we do not have.** Show the operator handshake, the API, the signed
+  agreement - build them as though they are live. But nothing on screen may assert that a real
+  integration ran, a real operator replied, or a real contract exists. The audience for this is
+  a grid operator who will know, and being caught overclaiming costs more than the feature wins.
 - **Customer-facing product website, not a pitch deck.** Never show investor or internal
   material: no business model or revenue lines, no moat, no competition, no market size, no
   assumptions-and-risks list, no legal or funding timeline. If `docs/PRODUCT.md` ever contains
   such material, ignore it for the site.
-- **Label every simulated number.** Any simulated or proxy figure on screen carries a visible
-  label - `Simulation`, `Proxy estimate` or `Assumption` - using the `Label` component from
-  `src/design`.
+- **Say it once, then get out of the way.** The scenario is established at the start - a
+  constructed site, operators named "Demo DSO", a seeded year - and after that the interface
+  behaves like the real product. **Do not put a `Simulation` badge on every panel.** A screen
+  covered in disclaimers reads as a prototype apologising for itself, and the names on it
+  already tell anyone watching that the operators are invented.
+  The `Label` component still exists for the one or two places where a figure would otherwise
+  be read as sourced market data - a headroom estimate, an assumed margin - and for those it
+  is a caption, not a warning sticker.
 - **Do not rewrite existing copy.** Restyle and re-lay-out freely, but the words already on the
   site and in `docs/` stay as they are.
 - **The product name lives in one place:** `src/design/brand.ts`. Use it for the navbar, page
