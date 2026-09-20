@@ -2,13 +2,15 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Chip, Separator, Stepper, Wordmark } from '../design'
+import SiteFinder from '../demo/scene1/SiteFinder'
 import Scene1 from '../demo/scene1/Scene1'
 import Scene3 from '../demo/scene3/Scene3'
 import { Stage } from './Stage'
 import type { SceneProps } from './types'
 
 const SCENES: Array<{ label: string; Component: (props: SceneProps) => React.ReactElement }> = [
-  { label: 'Where to connect', Component: Scene1 },
+  { label: 'Where to build', Component: SiteFinder },
+  { label: 'On what terms', Component: Scene1 },
   { label: 'Holding the cap', Component: Scene3 },
 ]
 

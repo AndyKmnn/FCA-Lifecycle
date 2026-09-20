@@ -35,6 +35,11 @@ export interface KreisMapProps {
   /** The connection seeker's own site, in map units. */
   site?: { x: number; y: number } | null
   homeId?: string
+  /**
+   * Overrides the colouring entirely, for callers that score Kreise on
+   * something other than how fast the operator connects.
+   */
+  fills?: Map<string, { fill: string; opacity: number }>
 }
 
 function KreisMapInner({
@@ -44,12 +49,15 @@ function KreisMapInner({
   onSelect,
   site,
   homeId,
+  fills,
 }: KreisMapProps) {
   const shapes = useMemo(
     () =>
       KREISE.map((k) => {
         const op = operators.get(k.id)
         const hit = matched.has(k.id)
+        const override = fills?.get(k.id)
+        if (override) return { k, hit, fill: override.fill, opacity: override.opacity }
         return {
           k,
           hit,
@@ -60,7 +68,7 @@ function KreisMapInner({
           opacity: hit ? 0.55 : 0.18,
         }
       }),
-    [operators, matched],
+    [operators, matched, fills],
   )
 
   return (
