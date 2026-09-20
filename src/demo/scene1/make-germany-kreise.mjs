@@ -357,7 +357,19 @@ for (const k of out) {
 
   for (let i = 0; i < count; i++) {
     const nr = rngFor(`${k.id}|node${i}`)
-    const headroomMw = between(nr, 0.5, k.urban ? 18 : 34)
+
+    /**
+     * Roughly one Kreis in twelve has a transmission-level connection point.
+     *
+     * Without them the map says no site in Germany can take 40 MW, which is
+     * true of a 20 kV substation and false of the country: a load that size
+     * connects at high voltage or not at all, and where those points are is
+     * most of the answer to where such a load can go.
+     */
+    const transmission = nr() < 0.085
+    const headroomMw = transmission
+      ? between(nr, 40, 180)
+      : between(nr, 0.5, k.urban ? 18 : 34)
 
     /** Applications filed and not yet built - the invisible part. */
     const queue = []
@@ -378,11 +390,19 @@ for (const k of out) {
     }
     queue.sort((a, b) => a.filed.localeCompare(b.filed))
 
+    // Scattered around the Kreis centroid rather than placed: the real
+    // coordinates of a substation are not the point, being in the right Kreis
+    // is. The spread is small enough to stay inside all but the thinnest.
+    const angle = nr() * Math.PI * 2
+    const radius = (0.3 + nr() * 0.7) * (count > 1 ? 9 : 4)
+
     nodes.push({
       id: `${k.id}-n${i}`,
       kreisId: k.id,
       name: `${k.name}${count > 1 ? '-' + NODE_SUFFIX[i] : ''}`,
-      voltageLevel: nr() < 0.25 ? '110/20 kV' : '20/0,4 kV',
+      nx: +(k.cx + Math.cos(angle) * radius).toFixed(1),
+      ny: +(k.cy + Math.sin(angle) * radius).toFixed(1),
+      voltageLevel: transmission ? '380/110 kV' : nr() < 0.25 ? '110/20 kV' : '20/0,4 kV',
       headroomMw,
       queuedMw: +queue.reduce((a, x) => a + x.mw, 0).toFixed(0),
       queue,
@@ -401,8 +421,14 @@ for (const k of out) {
  * The shape here is the one the reform is aimed at - two speculative filings
  * holding places ahead of a project with an offtake behind it.
  */
-const homeNode = nodes.find((n) => n.kreisId === HOME_ID)
+const homeNodes = nodes.filter((n) => n.kreisId === HOME_ID)
+const homeNode = homeNodes[0]
 if (homeNode) {
+  // Renaming one of them to Ost collides with whichever already held it, so the
+  // whole Kreis is renamed rather than just the pinned node.
+  homeNodes.forEach((n, i) => {
+    n.name = `${homeNode.kreisId.split('-')[1].replace(/^./, (c) => c.toUpperCase())}-${NODE_SUFFIX[i === 0 ? 1 : i === 1 ? 0 : i]}`
+  })
   homeNode.name = 'Freising-Ost'
   homeNode.voltageLevel = '110/20 kV'
   homeNode.headroomMw = 14.2
