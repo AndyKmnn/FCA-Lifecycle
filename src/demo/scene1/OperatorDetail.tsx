@@ -121,7 +121,7 @@ export function OperatorDetail({
 
   if (!operator || !original) {
     return (
-      <Surface className="flex min-h-0 w-[420px] flex-1 items-center justify-center p-8">
+      <Surface className="flex min-h-0 flex-1 items-center justify-center p-8">
         <p className="text-center text-[14px] text-muted-foreground">
           Pick a Kreis on the map, or a row in the database, to see the terms that operator
           would write.
@@ -133,7 +133,7 @@ export function OperatorDetail({
   const changed = <K extends keyof Operator>(k: K) => operator[k] !== original[k]
 
   return (
-    <Surface className="flex min-h-0 w-[420px] flex-1 flex-col">
+    <Surface className="flex min-h-0 flex-1 flex-col">
       <div className="shrink-0 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

@@ -7,6 +7,7 @@ import { NodeMap } from './NodeMap'
 import { accessOf, ACCESS_LABEL, EUROPE_CONTEXT } from './europe'
 import { KREISE } from './germanyKreise'
 import { loadOperators, type Operator, type OperatorFile } from './operators'
+import { setTarget } from './selection'
 import {
   DEFAULT_REQUIREMENT,
   effectiveHeadroom,
@@ -171,6 +172,7 @@ function Finder({
         c.blocker === 'none' ? { fill: CHART.ok, opacity: 0.62 }
         : c.blocker === 'no-room' ? { fill: 'var(--destructive)', opacity: 0.3 }
         : c.blocker === 'too-slow' ? { fill: CHART.warn, opacity: 0.3 }
+        : c.blocker === 'too-curtailed' ? { fill: CHART.series, opacity: 0.22 }
         : { fill: 'var(--muted)', opacity: 0.3 },
       )
     }
@@ -184,6 +186,11 @@ function Finder({
   const node = nodeId ? (kreisNodes.find((n) => n.id === nodeId) ?? null) : null
   const kreisName = kreisId ? (KREISE.find((k) => k.id === kreisId)?.name ?? kreisId) : null
   const selectedCandidate = kreisId ? (byKreis.get(kreisId) ?? null) : null
+
+  // Hand the choice to the terms scene, which opens on it.
+  useEffect(() => {
+    setTarget(kreisId ? { kreisId, nodeId, byYear: req.byYear, mw: req.mw } : null)
+  }, [kreisId, nodeId, req.byYear, req.mw])
 
   const openKreis = (id: string) => {
     setKreisId(id)
@@ -334,6 +341,7 @@ function Finder({
               <Dot color={CHART.ok} /> fits the requirement
               <Dot color="var(--destructive)" /> no room at any node
               <Dot color={CHART.warn} /> queue too long
+              <Dot color={CHART.series} /> curtails more than the load can take
               <Dot color="var(--muted)" /> no flexible connection offered
             </>
           ) : (

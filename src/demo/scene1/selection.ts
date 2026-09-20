@@ -27,3 +27,27 @@ export const setChosen = (next: Chosen | null) => {
 }
 
 export const getChosen = () => chosen
+
+/**
+ * What the site finder settled on, read by the terms scene.
+ *
+ * The two scenes ask different halves of one question - where can this go, and
+ * on what terms - so the second opens where the first left off rather than
+ * making the presenter find the same Kreis twice on a second map.
+ */
+export interface Target {
+  kreisId: string
+  nodeId: string | null
+  /** The year the requirement asked for, which the terms are read as of. */
+  byYear: number
+  /** Capacity the load asked for, MW. */
+  mw: number
+}
+
+let target: Target | null = null
+
+export const setTarget = (next: Target | null) => {
+  target = next
+}
+
+export const getTarget = () => target

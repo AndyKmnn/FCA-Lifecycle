@@ -83,7 +83,7 @@ export interface Candidate {
   headroom: number
   monthsToConnect: number
   /** Why it failed, when it did. */
-  blocker: 'none' | 'no-fca' | 'too-slow' | 'no-room'
+  blocker: 'none' | 'no-fca' | 'too-slow' | 'no-room' | 'too-curtailed'
 }
 
 /**
@@ -130,6 +130,9 @@ export function shortlist(
       !operator.offersFca ? 'no-fca'
       : operator.monthsToConnect > budget ? 'too-slow'
       : !best || bestRoom < req.mw ? 'no-room'
+      // An operator may reserve the right to curtail for more hours than the
+      // load can absorb, which rules the place out however much room it has.
+      : operator.maxCurtailmentHours > req.curtailmentHours ? 'too-curtailed'
       : 'none'
 
     return {
