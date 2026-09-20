@@ -46,6 +46,9 @@ export interface TopBarProps {
   onNextDay: () => void
   onReset: () => void
   onShowYear: () => void
+  onShowTermSheet: () => void
+  /** False when no operator was chosen, which leaves nothing to print. */
+  canPrint: boolean
 }
 
 export function TopBar({
@@ -59,6 +62,8 @@ export function TopBar({
   onNextDay,
   onReset,
   onShowYear,
+  onShowTermSheet,
+  canPrint,
 }: TopBarProps) {
   const trackRef = useRef<HTMLDivElement>(null)
   const [scrubbing, setScrubbing] = useState(false)
@@ -143,6 +148,9 @@ export function TopBar({
           </Button>
           <Button variant="secondary" size="sm" onClick={onShowYear}>
             Year
+          </Button>
+          <Button size="sm" onClick={onShowTermSheet} disabled={!canPrint}>
+            Term sheet
           </Button>
         </div>
       </div>

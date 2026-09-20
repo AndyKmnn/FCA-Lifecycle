@@ -14,6 +14,8 @@ import {
   type CapOverrides,
   type YearPlan,
 } from './replan'
+import { getChosen } from '../scene1/selection'
+import { TermSheet } from './TermSheet'
 import { JUMP_DAYS } from './script'
 import { useDaySelection } from './useDaySelection'
 
@@ -90,6 +92,9 @@ function Explorer({ profile, limits }: { profile: Profile; limits: Limits }) {
   /** The cap under the cursor mid-drag, before the year has been re-planned. */
   const [draft, setDraft] = useState<{ day: number; mw: number } | null>(null)
   const [showYear, setShowYear] = useState(false)
+  const [showSheet, setShowSheet] = useState(false)
+  /** Read once: the presenter's choice cannot change while this scene is up. */
+  const chosen = useMemo(() => getChosen(), [])
 
   const plan: YearPlan = useMemo(
     () => planYear(profile, limits, overrides),
@@ -141,6 +146,8 @@ function Explorer({ profile, limits }: { profile: Profile; limits: Limits }) {
         onNextDay={nextDay}
         onReset={onReset}
         onShowYear={() => setShowYear(true)}
+        onShowTermSheet={() => setShowSheet(true)}
+        canPrint={chosen !== null}
       />
 
       <div className="relative flex min-h-0 flex-1 gap-5">
@@ -166,6 +173,16 @@ function Explorer({ profile, limits }: { profile: Profile; limits: Limits }) {
       </div>
 
       <FootNote plan={plan} />
+
+      {showSheet && chosen ? (
+        <TermSheet
+          chosen={chosen}
+          profile={profile}
+          plan={plan}
+          year={limits.meta.year}
+          onClose={() => setShowSheet(false)}
+        />
+      ) : null}
     </div>
   )
 }

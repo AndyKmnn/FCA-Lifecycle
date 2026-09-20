@@ -75,3 +75,30 @@
     transition-duration: 0.001ms !important;
   }
 }
+
+/**
+ * Printing.
+ *
+ * The term sheet renders through a portal onto document.body, outside the
+ * presenter stage and its scale transform - so printing is a matter of hiding
+ * the application and leaving the document behind. Nothing here needs to know
+ * what the document looks like.
+ */
+@media print {
+  #root {
+    display: none !important;
+  }
+
+  body.presenter-lock {
+    overflow: visible;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 16mm;
+  }
+}

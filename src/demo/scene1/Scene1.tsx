@@ -5,6 +5,7 @@ import { Button, CHART, Surface } from '../../design'
 import type { SceneProps } from '../../shell/types'
 import { UploadStrip } from './UploadStrip'
 import { project } from './germanyStates'
+import { setChosen } from './selection'
 import { KreisMap } from './KreisMap'
 import { OperatorDetail } from './OperatorDetail'
 import { OperatorList } from './OperatorList'
@@ -147,6 +148,15 @@ function Explorer({
 
   const selected = selectedId ? (byId.get(selectedId) ?? null) : null
   const original = selectedId ? (originals.get(selectedId) ?? null) : null
+
+  // Hand the choice to the next scene, which prints it.
+  useEffect(() => {
+    setChosen(
+      selected
+        ? { operator: selected, amended: selectedId ? amendments.has(selectedId) : false, year }
+        : null,
+    )
+  }, [selected, selectedId, amendments, year])
 
   return (
     <div className="flex h-full w-full flex-col gap-5">
