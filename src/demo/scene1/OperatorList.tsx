@@ -17,6 +17,10 @@ import {
  * moves both. Sliders are native range inputs tinted to the ink rather than the
  * brand amber - amber on this screen means the selected district and nothing
  * else, and three amber sliders would take that meaning away.
+ *
+ * They are left at their natural height. Squeezed to the 4px the track wants to
+ * be, the browser clips the thumb and there is nothing left to take hold of -
+ * the control looks right and cannot be used.
  */
 
 const TYPES: LimitType[] = ['fullyDynamic', 'dynamic', 'static']
@@ -55,7 +59,7 @@ function Slider({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-1.5 h-1 w-full cursor-pointer accent-[var(--foreground)]"
+        className="mt-1 h-5 w-full cursor-pointer accent-[var(--foreground)]"
       />
     </label>
   )

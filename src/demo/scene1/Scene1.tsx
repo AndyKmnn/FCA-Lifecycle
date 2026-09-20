@@ -200,28 +200,39 @@ function Explorer({
               <Swatch color="var(--muted)" /> no FCA
             </div>
 
-            <label className="mt-4 block">
-              <span className="flex items-baseline justify-between">
-                <span className="micro text-muted-foreground">As it stands in</span>
-                <span className="tabular text-[15px] font-semibold text-foreground">{year}</span>
-              </span>
-              <input
-                type="range"
-                min={BASE_YEAR}
-                max={file.meta.horizonYear}
-                step={1}
-                value={year}
-                onChange={(e) => setYear(Number(e.target.value))}
-                className="mt-1.5 h-1 w-full cursor-pointer accent-[var(--foreground)]"
-                aria-label="Year"
-              />
-              <span className="mt-1.5 block text-[12px] text-muted-foreground">
+            <div className="mt-4 rounded-md border border-border bg-muted/40 px-3 py-2.5">
+              <label className="block">
+                <span className="flex items-baseline justify-between">
+                  <span className="micro text-muted-foreground">
+                    The country as it stands in
+                  </span>
+                  <span className="tabular text-[17px] leading-none font-semibold text-foreground">
+                    {year}
+                  </span>
+                </span>
+                <input
+                  type="range"
+                  min={BASE_YEAR}
+                  max={file.meta.horizonYear}
+                  step={1}
+                  value={year}
+                  onChange={(e) => setYear(Number(e.target.value))}
+                  className="mt-1 h-5 w-full cursor-pointer accent-[var(--foreground)]"
+                  aria-label="Year"
+                />
+                <span className="flex justify-between text-[10px] text-muted-foreground">
+                  <span className="tabular">{BASE_YEAR}</span>
+                  <span>Netzanschlusspaket</span>
+                  <span>section 14a</span>
+                  <span className="tabular">{file.meta.horizonYear}</span>
+                </span>
+              </label>
+              <p className="mt-2 text-[12px] leading-snug text-muted-foreground">
                 <span className="tabular">{offering}</span> of {file.operators.length} write an
-                FCA{year > BASE_YEAR ? ` by ${year}` : ' today'}
-                {year >= 2028 ? ' \u00b7 Netzanschlusspaket in force' : ''}
-                {year >= 2029 ? ' \u00b7 section 14a monitoring complete' : ''}
-              </span>
-            </label>
+                FCA{year > BASE_YEAR ? ` by ${year}` : ' today'}. This moves the operators
+                themselves - not which of them you are looking at.
+              </p>
+            </div>
 
             <div className="mt-3 flex min-h-0 flex-1 items-center justify-center">
               <KreisMap
