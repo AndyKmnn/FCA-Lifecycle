@@ -35,6 +35,8 @@ export default function Scene1({ onAdvance }: SceneProps) {
     districts: Districts
   } | null>(null)
   const [picked, setPicked] = useState<string | null>(null)
+  /** Nothing moves until the presenter has put a profile in. */
+  const [fileName, setFileName] = useState<string | null>(null)
 
   useEffect(() => {
     setSelectedDistrict(null)
@@ -50,7 +52,8 @@ export default function Scene1({ onAdvance }: SceneProps) {
     }
   }, [])
 
-  const stage = useTimeline(MARKS, 'scene1', data !== null)
+  const started = fileName !== null
+  const stage = useTimeline(MARKS, 'scene1', data !== null && started)
 
   if (!data) return <div className="h-full w-full" />
 
@@ -64,7 +67,13 @@ export default function Scene1({ onAdvance }: SceneProps) {
 
   return (
     <div className="flex h-full w-full flex-col gap-6">
-      <UploadStrip meta={data.profile.meta} uploaded={stage >= 1} durationSec={UPLOAD_SEC} />
+      <UploadStrip
+        profile={data.profile}
+        uploaded={stage >= 1}
+        durationSec={UPLOAD_SEC}
+        fileName={fileName}
+        onPick={setFileName}
+      />
 
       <div className="flex min-h-0 flex-1 items-stretch gap-12">
         <div className="flex w-[560px] shrink-0 flex-col justify-center">
@@ -73,8 +82,9 @@ export default function Scene1({ onAdvance }: SceneProps) {
             Where can this connect?
           </h2>
           <p className="mt-5 text-xl leading-relaxed text-muted-foreground">
-            Public asset registers and grid expansion plans, screened into candidate nodes - and
-            the operator whose district each one sits in.
+            {started
+              ? 'Public asset registers and grid expansion plans, screened into candidate nodes - and the operator whose district each one sits in.'
+              : "Start with the site's own year of 15-minute meter data. Everything after it - which cap the site can live with, and what that cap costs - is read off this one file."}
           </p>
 
           {/* Covers the months-to-connect on the map: seeded demo values, not quotes. */}
@@ -108,7 +118,11 @@ export default function Scene1({ onAdvance }: SceneProps) {
             className="absolute"
             initial={{ opacity: 0, scale: 0.98 }}
             animate={
-              zoomed ? { opacity: 0, scale: 1.9 } : { opacity: 1, scale: 1 }
+              !started
+                ? { opacity: 0, scale: 0.98 }
+                : zoomed
+                  ? { opacity: 0, scale: 1.9 }
+                  : { opacity: 1, scale: 1 }
             }
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
             style={{ pointerEvents: 'none' }}
