@@ -13,15 +13,15 @@ import { hasPlayed, useTimeline } from './useTimeline'
 
 /** Scripted beats, ms from the scene's start. */
 const MARKS = [
-  900, // 1 first card
-  1800, // 2 second
-  2700, // 3 third
-  3600, // 4 fourth
-  5200, // 5 recommended marker
-  7000, // 6 the term sheet starts typing
+  250, // 1 first card
+  450, // 2 second
+  650, // 3 third
+  850, // 4 fourth
+  1200, // 5 recommended marker
+  1600, // 6 the term sheet starts typing
 ] as const
 
-const TYPING_MS_PER_CHAR = 26
+const TYPING_MS_PER_CHAR = 6
 
 /**
  * The term sheet's finished height, reserved from the very first character.

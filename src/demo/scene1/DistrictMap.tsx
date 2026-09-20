@@ -69,7 +69,7 @@ export function DistrictMap({
             }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 + i * 0.12 }}
+            transition={{ duration: 0.25, delay: 0.04 + i * 0.04 }}
           >
             {d.states.map((code) => (
               <motion.path
@@ -98,7 +98,7 @@ export function DistrictMap({
               key={`label-${d.id}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.35, delay: 0.5 + i * 0.1 }}
+              transition={{ duration: 0.2, delay: 0.18 + i * 0.04 }}
               style={{ pointerEvents: 'none' }}
             >
               <text
@@ -128,7 +128,7 @@ export function DistrictMap({
       <motion.g
         initial={{ opacity: 0, scale: 0.6 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, delay: 0.9 }}
+        transition={{ duration: 0.25, delay: 0.34 }}
         style={{ originX: `${site.x}px`, originY: `${site.y}px`, pointerEvents: 'none' }}
       >
         <circle cx={site.x} cy={site.y} r={10} fill={CHART.series} />

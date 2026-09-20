@@ -36,8 +36,8 @@ export function EuropeMap({ height }: EuropeMapProps) {
             initial={{ opacity: 0, fillOpacity: 0.06 }}
             animate={{ opacity: 1, fillOpacity: home ? 0.55 : 0.09 }}
             transition={{
-              opacity: { duration: 0.3, delay: 0.05 + Math.min(i, 24) * 0.012 },
-              fillOpacity: { duration: 0.5, delay: home ? 0.7 : 0.2 },
+              opacity: { duration: 0.2, delay: 0.02 + Math.min(i, 24) * 0.004 },
+              fillOpacity: { duration: 0.3, delay: home ? 0.26 : 0.08 },
             }}
           />
         )

@@ -10,13 +10,13 @@ import { DistrictMap } from './DistrictMap'
 import { EuropeMap } from './EuropeMap'
 import { setSelectedDistrict } from './selection'
 
-const UPLOAD_SEC = 3.2
+const UPLOAD_SEC = 1
 
 /** Scripted beats, ms from the scene's start. */
 const MARKS = [
-  3400, // 1 upload finished - Europe is on screen, Germany picked out
-  6000, // 2 zoom into Germany: the districts
-  8000, // 3 district labels land, the presenter can pick one
+  1100, // 1 upload finished - Europe is on screen, Germany picked out
+  1700, // 2 zoom into Germany: the districts
+  2300, // 3 district labels land, the presenter can pick one
 ] as const
 
 const MAP_HEIGHT = 560
