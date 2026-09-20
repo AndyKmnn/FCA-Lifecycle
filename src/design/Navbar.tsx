@@ -5,6 +5,7 @@ import { cn } from './utils'
 const LINKS = [
   { to: '/', label: 'Product', end: true },
   { to: '/demo', label: 'Demo', end: false },
+  { to: '/team', label: 'Team', end: false },
 ] as const
 
 /** Sticky, hairline-ruled, glass. Nothing in it that is not a destination. */
