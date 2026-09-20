@@ -38,7 +38,6 @@ export interface SubmissionProps {
   operator: Operator
   profile: Profile
   year: number
-  de: boolean
   /** The reference, lifted so the document can stamp itself. */
   onApproved: (ref: string) => void
 }
@@ -52,7 +51,7 @@ function Line({ k, v }: { k: string; v: string }) {
   )
 }
 
-export function Submission({ operator, profile, year, de, onApproved }: SubmissionProps) {
+export function Submission({ operator, profile, year, onApproved }: SubmissionProps) {
   const [stage, setStage] = useState<Stage>('idle')
   const ref = reference(operator, year)
 
@@ -63,10 +62,7 @@ export function Submission({ operator, profile, year, de, onApproved }: Submissi
   }, [stage])
 
   const n = (v: number, d = 0) =>
-    v.toLocaleString(de ? 'de-DE' : 'en-GB', {
-      minimumFractionDigits: d,
-      maximumFractionDigits: d,
-    })
+    v.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d })
 
   /** What actually goes over the wire, if there were a wire. */
   const payload = [
@@ -89,16 +85,13 @@ export function Submission({ operator, profile, year, de, onApproved }: Submissi
     return (
       <aside className="no-print w-[380px] shrink-0">
         <div className="sticky top-24 rounded-lg border border-[#d9dfe2] bg-white p-5">
-          <h3 className="text-[15px] font-semibold text-[#1f2a33]">
-            {de ? 'An den Netzbetreiber' : 'To the operator'}
-          </h3>
+          <h3 className="text-[15px] font-semibold text-[#1f2a33]">Submit to the operator</h3>
           <p className="mt-2 text-[13px] leading-relaxed text-[#5b6b77]">
-            {de
-              ? 'Der Antrag geht strukturiert heraus - Lastgang, Anschlussleistung und der vorgeschlagene Cap, nicht als PDF im Anhang.'
-              : 'The application goes over structured - load profile, connection capacity and the proposed cap, not a PDF attached to an email.'}
+            The application goes over structured - load profile, connection capacity and the
+            proposed cap - not a PDF attached to an email.
           </p>
           <Button className="mt-4 w-full" onClick={() => setStage('sending')}>
-            {de ? 'Antrag übermitteln' : 'Submit application'}
+            Submit application
           </Button>
         </div>
       </aside>
@@ -109,17 +102,16 @@ export function Submission({ operator, profile, year, de, onApproved }: Submissi
     <aside className="no-print w-[380px] shrink-0">
       <div className="sticky top-24 overflow-hidden rounded-lg border border-[#1f2a33] bg-white">
         <header className="border-b border-[#d9dfe2] bg-[#1f2a33] px-4 py-2.5">
-          <p className="text-[13px] font-semibold text-white">{operator.name}</p>
-          <p className="text-[11px] text-white/70">
-            {de ? 'Anschlussportal · Eingang' : 'Connection portal · Inbox'}
+          <p className="text-[10px] font-semibold tracking-wide text-white/60 uppercase">
+            The operator&rsquo;s screen
           </p>
+          <p className="mt-0.5 text-[13px] font-semibold text-white">{operator.name}</p>
+          <p className="text-[11px] text-white/70">Connection portal &middot; Inbox</p>
         </header>
 
         {stage === 'sending' ? (
           <div className="p-4">
-            <p className="text-[12px] text-[#5b6b77]">
-              {de ? 'Wird übermittelt …' : 'Submitting …'}
-            </p>
+            <p className="text-[12px] text-[#5b6b77]">Submitting &hellip;</p>
             <pre className="mt-2 overflow-x-auto rounded border border-[#e5e9ec] bg-[#f7f9fa] p-3 font-mono text-[10.5px] leading-relaxed text-[#1f2a33]">
               {payload}
             </pre>
@@ -138,13 +130,7 @@ export function Submission({ operator, profile, year, de, onApproved }: Submissi
                     stage === 'approved' ? 'text-[#12705a]' : 'text-[#a64b00]'
                   }`}
                 >
-                  {stage === 'approved'
-                    ? de
-                      ? 'freigegeben'
-                      : 'approved'
-                    : de
-                      ? 'neu'
-                      : 'new'}
+                  {stage === 'approved' ? 'approved' : 'new'}
                 </span>
               </div>
 
@@ -152,57 +138,60 @@ export function Submission({ operator, profile, year, de, onApproved }: Submissi
 
               <div className="mt-2.5 border-t border-[#e5e9ec] pt-2 text-[12px]">
                 <Line
-                  k={de ? 'Anschlussleistung' : 'Connection capacity'}
+                  k="Connection capacity"
                   v={`${n(profile.meta.connectionMw, 1)} MW`}
                 />
                 <Line
-                  k={de ? 'Lastgang' : 'Load profile'}
+                  k="Load profile"
                   v={`${n(profile.meta.count)} × 15 min`}
                 />
-                <Line k={de ? 'Spitze' : 'Peak'} v={`${n(profile.meta.peakMw, 2)} MW`} />
+                <Line k="Peak" v={`${n(profile.meta.peakMw, 2)} MW`} />
                 <Line
-                  k={de ? 'Vorschlag Cap' : 'Proposed cap'}
+                  k="Proposed cap"
                   v={`${n(operator.capMw, 1)} MW`}
                 />
                 <Line
-                  k={de ? 'Feste Leistung' : 'Firm level'}
+                  k="Firm level"
                   v={`${n(operator.guaranteedMinimumMw, 1)} MW`}
                 />
                 <Line
-                  k={de ? 'Freie Kapazität' : 'Headroom at node'}
+                  k="Headroom at node"
                   v={`${n(operator.headroomMw, 1)} MW`}
                 />
               </div>
 
               {stage === 'queued' ? (
-                <div className="mt-3 flex gap-2">
-                  <Button
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => {
-                      setStage('approved')
-                      onApproved(ref)
-                    }}
-                  >
-                    {de ? 'Freigeben' : 'Approve'}
-                  </Button>
-                  <Button size="sm" variant="outline" className="flex-1" disabled>
-                    {de ? 'Rückfrage' : 'Query'}
-                  </Button>
-                </div>
+                <>
+                  <p className="mt-3 text-[11px] text-[#5b6b77]">
+                    The operator reviews it against the node and decides:
+                  </p>
+                  <div className="mt-1.5 flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => {
+                        setStage('approved')
+                        onApproved(ref)
+                      }}
+                    >
+                      Approve
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex-1" disabled>
+                      Query
+                    </Button>
+                  </div>
+                </>
               ) : (
                 <p className="mt-3 text-[12px] leading-relaxed text-[#12705a]">
-                  {de
-                    ? `Vereinbarung ausgestellt. Erste Tageslimits ab Inbetriebnahme in ${n(operator.monthsToConnect)} Monaten.`
-                    : `Agreement issued. First daily limits from energisation in ${n(operator.monthsToConnect)} months.`}
+                  Agreement issued. First daily limits from energisation in{' '}
+                  {n(operator.monthsToConnect)} months.
                 </p>
               )}
             </div>
 
             <p className="mt-3 text-[11px] leading-relaxed text-[#5b6b77]">
-              {de
-                ? 'Die freie Kapazität am Knoten kennt nur der Netzbetreiber - deshalb entscheidet er, und nicht wir.'
-                : 'Only the operator knows the headroom at the node, which is why the decision is theirs and not ours.'}
+              Only the operator knows the headroom at the node, which is why the decision is
+              theirs and not ours.
             </p>
           </div>
         )}

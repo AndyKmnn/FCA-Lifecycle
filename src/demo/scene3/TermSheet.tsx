@@ -19,10 +19,14 @@ import { Submission } from './Submission'
  * step, nothing to install - and pressing Cmd+P in the room and having an A4
  * document appear is a better beat than a download nobody opens.
  *
- * German and English, switchable. The counterparty is a German grid operator
- * and the instrument is German law, so German is the default - but half the
- * people who will be shown this document do not read it, and a term sheet
- * nobody in the room can follow is a term sheet nobody discusses.
+ * The document switches between German and English; everything around it - the
+ * toolbar, the submission panel, the operator's portal - stays English.
+ *
+ * That split is the honest one. The instrument is German law and the
+ * counterparty is a German operator, so the contract is German by default and a
+ * German operator must be able to read it as such. The application itself is
+ * not a contract and has no business being bilingual: one interface, one
+ * language, and the document is the only thing that needs a choice.
  */
 
 type Lang = 'de' | 'en'
@@ -217,10 +221,10 @@ export function TermSheet({ chosen, profile, plan, year, onClose }: TermSheetPro
             ))}
           </span>
           <Button size="sm" onClick={() => window.print()}>
-            {de ? 'Drucken / als PDF' : 'Print / save as PDF'}
+            Print / save as PDF
           </Button>
           <Button size="sm" variant="outline" onClick={onClose}>
-            {de ? 'Schließen' : 'Close'}
+            Close
           </Button>
         </span>
       </div>
@@ -321,7 +325,6 @@ export function TermSheet({ chosen, profile, plan, year, onClose }: TermSheetPro
         operator={o}
         profile={profile}
         year={year}
-        de={de}
         onApproved={setApprovedRef}
       />
       </div>
