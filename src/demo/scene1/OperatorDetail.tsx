@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { Profile } from '../../data'
 import { Button, Chip, Separator, Surface } from '../../design'
+import { BenchmarkPanel } from './BenchmarkPanel'
 import { LIMIT_TYPE_LABEL, monthsSkipped, type Operator } from './operators'
 
 /**
@@ -20,6 +21,8 @@ export interface OperatorDetailProps {
   operator: Operator | null
   /** The operator's own terms, before any amendment. */
   original: Operator | null
+  /** Everything comparable, for the benchmark. */
+  corpus: Operator[]
   profile: Profile
   amended: boolean
   onAmend: (patch: Partial<Operator>) => void
@@ -104,6 +107,7 @@ function Derived({ label, value, unit }: { label: string; value: string; unit: s
 export function OperatorDetail({
   operator,
   original,
+  corpus,
   profile,
   amended,
   onAmend,
@@ -272,6 +276,8 @@ export function OperatorDetail({
               unit="months"
             />
           </div>
+
+          <BenchmarkPanel operator={operator} corpus={corpus} />
 
           {result && result.hours === 0 ? (
             <p className="mt-4 text-[13px] leading-relaxed font-medium text-ok">

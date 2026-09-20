@@ -249,6 +249,7 @@ function Explorer({
             <OperatorDetail
               operator={selected}
               original={original}
+              corpus={projected}
               profile={profile}
               amended={selectedId ? amendments.has(selectedId) : false}
               onAmend={amend}
