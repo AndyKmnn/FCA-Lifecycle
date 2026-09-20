@@ -5,6 +5,7 @@ import { Button } from '../../design'
 import type { Chosen } from '../scene1/selection'
 import type { LimitType } from '../scene1/operators'
 import { HOURS_PER_STEP, type YearPlan } from './replan'
+import { Submission } from './Submission'
 
 /**
  * The draft agreement, as a document rather than a screen.
@@ -96,6 +97,8 @@ function Row({ n, head, children }: { n: number; head: string; children: React.R
 
 export function TermSheet({ chosen, profile, plan, year, onClose }: TermSheetProps) {
   const [lang, setLang] = useState<Lang>('de')
+  /** Set once the operator approves, which stamps the document. */
+  const [approvedRef, setApprovedRef] = useState<string | null>(null)
   const binding = useMemo(() => bindingSummary(plan), [plan])
 
   const o = chosen.operator
@@ -222,19 +225,34 @@ export function TermSheet({ chosen, profile, plan, year, onClose }: TermSheetPro
         </span>
       </div>
 
+      <div className="mx-auto flex max-w-[1320px] items-start gap-8 px-8 py-10 print:block print:max-w-none print:p-0">
       <article
-        className="print-document mx-auto my-10 max-w-[820px] bg-white px-14 py-12 text-[#1f2a33] print:my-0 print:max-w-none print:px-0 print:py-0"
+        className="print-document min-w-0 flex-1 bg-white px-14 py-12 text-[#1f2a33] print:max-w-none print:px-0 print:py-0"
         lang={lang}
       >
-        <header className="border-b border-[#1f2a33] pb-5">
-          <h1 className="text-[24px] leading-tight font-semibold tracking-[-0.02em]">
-            {de ? 'Flexible Netzanschlussvereinbarung' : 'Flexible connection agreement'}
-          </h1>
-          <p className="mt-1.5 text-[13px] text-[#5b6b77]">
-            {de
-              ? 'Entwurf, unverbindliche Verhandlungsgrundlage nach § 17 Abs. 2b EnWG'
-              : 'Draft, non-binding basis for negotiation under section 17(2b) EnWG'}
-          </p>
+        <header className="flex items-start justify-between gap-6 border-b border-[#1f2a33] pb-5">
+          <div>
+            <h1 className="text-[24px] leading-tight font-semibold tracking-[-0.02em]">
+              {de ? 'Flexible Netzanschlussvereinbarung' : 'Flexible connection agreement'}
+            </h1>
+            <p className="mt-1.5 text-[13px] text-[#5b6b77]">
+              {approvedRef
+                ? de
+                  ? 'Vom Netzbetreiber freigegeben'
+                  : 'Approved by the network operator'
+                : de
+                  ? 'Entwurf, unverbindliche Verhandlungsgrundlage nach § 17 Abs. 2b EnWG'
+                  : 'Draft, non-binding basis for negotiation under section 17(2b) EnWG'}
+            </p>
+          </div>
+          {approvedRef ? (
+            <div className="shrink-0 rounded border border-[#12705a] px-3 py-2 text-right">
+              <p className="text-[10px] font-semibold tracking-wide text-[#12705a] uppercase">
+                {de ? 'Freigegeben' : 'Approved'}
+              </p>
+              <p className="mt-0.5 font-mono text-[11px] text-[#1f2a33]">{approvedRef}</p>
+            </div>
+          ) : null}
         </header>
 
         <dl className="mt-6 grid grid-cols-2 gap-x-10 gap-y-3 text-[13px]">
@@ -298,6 +316,15 @@ export function TermSheet({ chosen, profile, plan, year, onClose }: TermSheetPro
           )}
         </p>
       </article>
+
+      <Submission
+        operator={o}
+        profile={profile}
+        year={year}
+        de={de}
+        onApproved={setApprovedRef}
+      />
+      </div>
     </div>,
     document.body,
   )
