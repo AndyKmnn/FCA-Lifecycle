@@ -65,6 +65,17 @@ function Notice({ children }: { children: React.ReactNode }) {
 
 const EMPTY: CapOverrides = new Map<number, number>()
 
+/**
+ * How far down the cap can be dragged, MW.
+ *
+ * Not the agreement's guaranteed minimum, which is where this was clamped at
+ * first. On 2026-01-20 the cap already sits on that guarantee, so the line could
+ * not move down at all on the very day the scene opens - and the question the
+ * presenter is there to answer is what happens when it does. Below the
+ * guarantee the chart says so.
+ */
+const DRAG_FLOOR_MW = 1
+
 function Explorer({ profile, limits }: { profile: Profile; limits: Limits }) {
   const jumps = useMemo(
     () => JUMP_DAYS.map((j) => ({ day: dayIndex(j.date, limits.meta.year), short: j.short })),
@@ -142,8 +153,9 @@ function Explorer({ profile, limits }: { profile: Profile; limits: Limits }) {
         <Timeline
           plan={today}
           capMw={capMw}
-          minMw={limits.meta.guaranteedMinimumMw}
+          minMw={DRAG_FLOOR_MW}
           maxMw={limits.meta.defaultLimitMw}
+          guaranteedMw={limits.meta.guaranteedMinimumMw}
           overridden={overrides.has(day) || draft?.day === day}
           onCapDrag={onCapDrag}
           onCapCommit={onCapCommit}

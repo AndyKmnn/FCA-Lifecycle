@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CHART, Chip, Label, Surface } from '../../design'
 import { STEPS_PER_DAY, type DayPlan } from './replan'
 
@@ -71,6 +71,8 @@ export interface TimelineProps {
   capMw: number
   minMw: number
   maxMw: number
+  /** The firm level the agreement guarantees. Draggable below, but marked. */
+  guaranteedMw: number
   /** True once this day carries a cap the presenter set rather than the data. */
   overridden: boolean
   /** Fired continuously while dragging - re-plans this day only. */
@@ -84,6 +86,7 @@ function TimelineInner({
   capMw,
   minMw,
   maxMw,
+  guaranteedMw,
   overridden,
   onCapDrag,
   onCapCommit,
@@ -91,6 +94,16 @@ function TimelineInner({
   const svgRef = useRef<SVGSVGElement>(null)
   const [dragging, setDragging] = useState(false)
   const [focused, setFocused] = useState(false)
+  /**
+   * The drag runs on refs, not on the dragging state.
+   *
+   * Pointer moves arrive faster than React commits, so a move handler closed
+   * over `dragging` from the render before the press still sees false and throws
+   * the first moves away. The ref is true the instant the press lands.
+   */
+  const draggingRef = useRef(false)
+  /** The last level the pointer was over - what a release commits. */
+  const latestRef = useRef(capMw)
 
   const paths = useMemo(() => {
     // Where the battery is discharging the meter sits below what the vehicles
@@ -110,6 +123,12 @@ function TimelineInner({
     }
   }, [plan])
 
+  // The day changed, or Reset ran, or a key nudged it: keep the ref in step so a
+  // later drag starts from what is on screen.
+  useEffect(() => {
+    if (!draggingRef.current) latestRef.current = capMw
+  }, [capMw])
+
   const settle = useCallback(
     (mw: number) => Math.min(maxMw, Math.max(minMw, Math.round(mw / STEP_MW) * STEP_MW)),
     [minMw, maxMw],
@@ -127,40 +146,50 @@ function TimelineInner({
   const mwAt = useCallback(
     (clientY: number): number => {
       const ctm = svgRef.current?.getScreenCTM()
-      if (!ctm) return capMw
+      if (!ctm) return latestRef.current
       const point = new DOMPoint(0, clientY).matrixTransform(ctm.inverse())
       return settle(mwOf(point.y))
     },
-    [capMw, settle],
+    [settle],
   )
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<SVGGElement>) => {
+      if (e.button !== 0) return
       e.preventDefault()
       e.currentTarget.setPointerCapture(e.pointerId)
+      draggingRef.current = true
       setDragging(true)
-      onCapDrag(mwAt(e.clientY))
+      const mw = mwAt(e.clientY)
+      latestRef.current = mw
+      onCapDrag(mw)
     },
     [mwAt, onCapDrag],
   )
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<SVGGElement>) => {
-      if (!dragging) return
-      onCapDrag(mwAt(e.clientY))
+      if (!draggingRef.current) return
+      const mw = mwAt(e.clientY)
+      latestRef.current = mw
+      onCapDrag(mw)
     },
-    [dragging, mwAt, onCapDrag],
+    [mwAt, onCapDrag],
   )
 
-  const handlePointerUp = useCallback(
-    (e: React.PointerEvent<SVGGElement>) => {
-      if (!dragging) return
-      setDragging(false)
-      e.currentTarget.releasePointerCapture(e.pointerId)
-      onCapCommit(mwAt(e.clientY))
-    },
-    [dragging, mwAt, onCapCommit],
-  )
+  /**
+   * Ends the drag on release, on cancel, and on a lost capture alike.
+   *
+   * It commits the last level the pointer was actually over rather than reading
+   * the ending event: a pointercancel carries whatever position the browser
+   * abandoned the gesture at, which is not where the presenter left the line.
+   */
+  const endDrag = useCallback(() => {
+    if (!draggingRef.current) return
+    draggingRef.current = false
+    setDragging(false)
+    onCapCommit(latestRef.current)
+  }, [onCapCommit])
 
   /**
    * Up and down are free: the shell's global key handler takes only the arrows
@@ -177,7 +206,9 @@ function TimelineInner({
       if (by === 0) return
       e.preventDefault()
       e.stopPropagation()
-      onCapCommit(settle(capMw + by))
+      const mw = settle(capMw + by)
+      latestRef.current = mw
+      onCapCommit(mw)
     },
     [capMw, onCapCommit, settle],
   )
@@ -200,6 +231,9 @@ function TimelineInner({
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {capMw < guaranteedMw - 1e-9 ? (
+            <Chip className="text-warn">Below the guaranteed {guaranteedMw.toFixed(1)} MW</Chip>
+          ) : null}
           {overridden ? <Chip selected>Manual override</Chip> : null}
           <Label kind="simulation" />
         </div>
@@ -208,7 +242,7 @@ function TimelineInner({
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
-        className="mt-3 w-full flex-1"
+        className="mt-3 w-full flex-1 select-none"
         role="img"
         aria-label={`Schedule for ${plan.date}`}
       >
@@ -302,11 +336,19 @@ function TimelineInner({
           aria-valuetext={`${capMw.toFixed(1)} megawatts`}
           tabIndex={0}
           className="outline-none"
-          style={{ cursor: dragging ? 'grabbing' : 'ns-resize' }}
+          style={{
+            cursor: dragging ? 'grabbing' : 'ns-resize',
+            // Without these the press lands on the axis labels instead and the
+            // browser starts a text selection, which cancels the drag mid-pull.
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            touchAction: 'none',
+          }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onLostPointerCapture={endDrag}
           onKeyDown={handleKeyDown}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
