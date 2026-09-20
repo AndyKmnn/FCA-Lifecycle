@@ -145,6 +145,18 @@ function Explorer({
 
       {started ? (
         <div className="flex min-h-0 flex-1 gap-5">
+          <OperatorList
+            rows={rows}
+            total={file.operators.length}
+            filters={filters}
+            sort={sort}
+            selectedId={selectedId}
+            amendedIds={amendedIds}
+            onFilters={setFilters}
+            onSort={setSort}
+            onSelect={setSelectedId}
+          />
+
           <Surface className="flex min-h-0 shrink-0 flex-col p-5">
             <div className="flex items-baseline justify-between gap-4">
               <h3 className="text-[17px] font-semibold tracking-[-0.02em] text-foreground">
@@ -175,18 +187,6 @@ function Explorer({
               />
             </div>
           </Surface>
-
-          <OperatorList
-            rows={rows}
-            total={file.operators.length}
-            filters={filters}
-            sort={sort}
-            selectedId={selectedId}
-            amendedIds={amendedIds}
-            onFilters={setFilters}
-            onSort={setSort}
-            onSelect={setSelectedId}
-          />
 
           <div className="flex min-h-0 flex-col gap-4">
             <OperatorDetail
