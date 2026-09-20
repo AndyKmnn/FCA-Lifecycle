@@ -178,8 +178,7 @@ function Explorer({ profile, limits }: { profile: Profile; limits: Limits }) {
         <TermSheet
           chosen={chosen}
           profile={profile}
-          plan={plan}
-          year={limits.meta.year}
+          limits={limits}
           onClose={() => setShowSheet(false)}
         />
       ) : null}

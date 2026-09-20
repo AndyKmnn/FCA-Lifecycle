@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { Profile } from '../../data'
+import type { Limits, Profile } from '../../data'
 import { Button } from '../../design'
 import type { Chosen } from '../scene1/selection'
 import type { LimitType } from '../scene1/operators'
-import { HOURS_PER_STEP, type YearPlan } from './replan'
+import { curtailmentOf } from '../scene1/curtailment'
 import { Submission } from './Submission'
 
 /**
@@ -48,42 +48,10 @@ const LIMIT_TYPE: Record<Lang, Record<LimitType, string>> = {
   },
 }
 
-/**
- * How often the agreed cap would actually bind, across the analysed year.
- *
- * Not the same thing as the breach counter in the scene: that counts the
- * quarter-hours the autopilot failed to hold, which is zero when it works. This
- * counts the quarter-hours the site would have wanted more than the cap allows,
- * which is what the annex to the contract has to state.
- */
-function bindingSummary(plan: YearPlan) {
-  let steps = 0
-  let energyMwh = 0
-  let run = 0
-  let longestRun = 0
-  for (const day of plan.days) {
-    for (let s = 0; s < day.requested.length; s++) {
-      const over = day.requested[s] - day.cap[s]
-      if (over > 1e-9) {
-        steps++
-        energyMwh += over * HOURS_PER_STEP
-        run++
-        if (run > longestRun) longestRun = run
-      } else run = 0
-    }
-  }
-  return {
-    hours: steps * HOURS_PER_STEP,
-    energyMwh,
-    longestRunHours: longestRun * HOURS_PER_STEP,
-  }
-}
-
 export interface TermSheetProps {
   chosen: Chosen
   profile: Profile
-  plan: YearPlan
-  year: number
+  limits: Limits
   onClose: () => void
 }
 
@@ -99,13 +67,35 @@ function Row({ n, head, children }: { n: number; head: string; children: React.R
   )
 }
 
-export function TermSheet({ chosen, profile, plan, year, onClose }: TermSheetProps) {
+export function TermSheet({ chosen, profile, limits, onClose }: TermSheetProps) {
   const [lang, setLang] = useState<Lang>('de')
   /** Set once the operator approves, which stamps the document. */
   const [approvedRef, setApprovedRef] = useState<string | null>(null)
-  const binding = useMemo(() => bindingSummary(plan), [plan])
+  /*
+   * The annex has to describe the ceiling clause 3 states, not some other one.
+   *
+   * It used to be computed from limits.json's day-ahead windows regardless of
+   * who the counterparty was, so every operator in the country annexed the same
+   * 95 hours while clause 3 above it named a ceiling anywhere from 2.8 to 6.0
+   * MW. An operator writing 2.8 MW would really cost this site 1,823 hours -
+   * through a contractual ceiling printed two rows higher - and the document
+   * reassured the reader with 95.
+   */
+  const binding = useMemo(
+    () => curtailmentOf(chosen.operator, profile, limits, chosen.year),
+    [chosen, profile, limits],
+  )
+
+  // Printing hides the application and leaves the document behind, so the
+  // stylesheet has to know a document is up - otherwise Cmd+P on any other
+  // page prints an empty sheet.
+  useEffect(() => {
+    document.body.classList.add('document-open')
+    return () => document.body.classList.remove('document-open')
+  }, [])
 
   const o = chosen.operator
+  const year = chosen.year
   const locale = LOCALE[lang]
   const n = (v: number, digits = 0) =>
     v.toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits })

@@ -85,9 +85,17 @@ const TIER: Record<LimitType, number> = { none: -1, static: 0, dynamic: 1, fully
  * year. Pure, so the same year always gives the same country.
  */
 export function operatorAt(o: Operator, year: number): Operator {
-  if (year <= BASE_YEAR) return o
-
-  const years = year - BASE_YEAR
+  /*
+   * No early return for the base year.
+   *
+   * There used to be one, and it skipped the zeroing that every later year
+   * applies - so at 2026 the 72 operators that write no FCA still carried a cap
+   * and a guaranteed firm level from the generator. Asking to see them and
+   * sorting by highest cap put operators labelled "No FCA" at the top of the
+   * list on the strength of a cap that does not exist. At years = 0 every term
+   * below is its own input, so the base year falls out of the same arithmetic.
+   */
+  const years = Math.max(0, year - BASE_YEAR)
   const offersFca = year >= o.fcaFromYear
   const digitalisation = Math.min(100, Math.round(o.digitalisation + o.digiGrowth * years))
   const reinforced = year >= o.reinforcementYear
@@ -114,6 +122,12 @@ export function operatorAt(o: Operator, year: number): Operator {
     limitType,
     capMw,
     guaranteedMinimumMw: offersFca ? o.guaranteedMinimumMw : 0,
+    // Forgotten at first, which gave every operator that had just started
+    // offering a nought-hour ceiling above the cap it had itself just written -
+    // and handed those nought-hour rows an unbeatable score in the benchmark,
+    // where a lower ceiling is better.
+    maxCurtailmentHours: offersFca ? o.maxCurtailmentHours : 0,
+    compensationAboveCap: offersFca ? o.compensationAboveCap : false,
     monthsToConnect,
     monthsToFirm: reinforced ? monthsToConnect : Math.max(monthsToConnect, o.monthsToFirm - 4 * years),
     headroomMw: reinforced ? +(o.headroomMw + 12).toFixed(1) : o.headroomMw,

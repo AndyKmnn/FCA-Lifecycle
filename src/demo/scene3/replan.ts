@@ -296,7 +296,13 @@ export function planDay(input: DayInput): DayResult {
       // tail of a long window; discharging greedily runs it flat too early.
       const excess = load - limit
       energyAboveCapMwh += excess * HOURS_PER_STEP
-      slowdownRoomMwh += MAX_SLOWDOWN * load * HOURS_PER_STEP
+      // Only the room a slowdown could actually have used. Counting the full
+      // MAX_SLOWDOWN share even where the slowdown is clipped to the excess
+      // overstates it, and the shortfall then comes out negative - the footnote
+      // read "short by -0.95 MWh" on 252 of the day/cap combinations, because
+      // the real failure there is a power breach at one instant, which an
+      // energy budget cannot express.
+      slowdownRoomMwh += Math.min(MAX_SLOWDOWN * load, excess) * HOURS_PER_STEP
       slowed = Math.min(share * load, excess)
       discharge = Math.min(battPowerMw, soc / HOURS_PER_STEP, excess - slowed)
       if (excess - slowed - discharge > 1e-9) {
@@ -375,7 +381,7 @@ export function planDay(input: DayInput): DayResult {
           energyAboveCapMwh,
           batteryMwh: dischargedMwh,
           slowdownMwh: slowdownRoomMwh,
-          deficitMwh: energyAboveCapMwh - dischargedMwh - slowdownRoomMwh,
+          deficitMwh: Math.max(0, energyAboveCapMwh - dischargedMwh - slowdownRoomMwh),
           neededSlowdown:
             slowdownRoomMwh > 0
               ? ((energyAboveCapMwh - dischargedMwh) / slowdownRoomMwh) * MAX_SLOWDOWN

@@ -61,7 +61,7 @@ export function BenchmarkPanel({
 
   const v = verdict(b)
   const w = weakest(b)
-  const gap = w.higherIsBetter ? w.median - w.value : w.value - w.median
+  const gap = w ? (w.higherIsBetter ? w.median - w.value : w.value - w.median) : 0
 
   return (
     <>
@@ -84,7 +84,7 @@ export function BenchmarkPanel({
         ))}
       </div>
 
-      {w.percentile < 0.5 ? (
+      {w ? (
         <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
           Push on <span className="font-medium text-foreground">{w.label.toLowerCase()}</span>{' '}
           first: comparable sites get{' '}

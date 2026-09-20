@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
-import type { Profile } from '../../data'
+import { useMemo, useState } from 'react'
+import type { Limits, Profile } from '../../data'
 import { Button, Chip, Separator, Surface } from '../../design'
 import { BenchmarkPanel } from './BenchmarkPanel'
+import { curtailmentOf } from './curtailment'
 import { LIMIT_TYPE_LABEL, monthsSkipped, type Operator } from './operators'
 
 /**
@@ -24,29 +25,31 @@ export interface OperatorDetailProps {
   /** Everything comparable, for the benchmark. */
   corpus: Operator[]
   profile: Profile
+  limits: Limits
+  /** The year the terms are read as of. */
+  year: number
   amended: boolean
   onAmend: (patch: Partial<Operator>) => void
   onReset: () => void
 }
 
-/** Hours above a flat cap, and what that costs, straight off the profile. */
-function costOf(profile: Profile, capMw: number) {
-  let hours = 0
-  let energyMwh = 0
-  for (const v of profile.values) {
-    if (v > capMw) {
-      hours += 0.25
-      energyMwh += (v - capMw) * 0.25
-    }
-  }
-  return {
-    hours,
-    energyMwh,
-    sharePct: (energyMwh / profile.meta.annualMwh) * 100,
-    costEur: energyMwh * profile.meta.marginEurPerMwh,
-  }
-}
-
+/**
+ * A number the presenter can retype.
+ *
+ * Deliberately `type="text"` with a decimal input mode rather than
+ * `type="number"`. A number input hands back the empty string for anything
+ * that is not a complete valid number, and `Number('')` is 0 - so clearing the
+ * cap field set it to nought, and the four figures below reported the site's
+ * entire annual consumption as energy at risk. Worse, typing "4.5" passes
+ * through "4.", which is also not a complete number, so the field reset itself
+ * to 0 mid-keystroke and the caret jumped. Values that far from reality do not
+ * stay on this screen: they travel into the API payload and into the signed
+ * agreement two scenes later.
+ *
+ * So the draft is held as text while it is being typed, and only committed when
+ * it parses to a finite number inside its own bounds. Blur clears the draft,
+ * which snaps the field back to whatever was last committed.
+ */
 function Field({
   label,
   value,
@@ -66,6 +69,18 @@ function Field({
   changed: boolean
   onChange: (v: number) => void
 }) {
+  const [draft, setDraft] = useState<string | null>(null)
+
+  const commit = (raw: string) => {
+    setDraft(raw)
+    if (raw.trim() === '') return
+    const n = Number(raw)
+    if (!Number.isFinite(n)) return
+    if (n < min) return
+    if (max !== undefined && n > max) return
+    onChange(n)
+  }
+
   return (
     <label className="block">
       <span className="micro text-muted-foreground">
@@ -74,12 +89,12 @@ function Field({
       </span>
       <span className="mt-1 flex items-baseline gap-1.5">
         <input
-          type="number"
-          value={value}
+          type="text"
+          inputMode="decimal"
+          value={draft ?? String(value)}
           step={step}
-          min={min}
-          max={max}
-          onChange={(e) => onChange(Number(e.target.value))}
+          onChange={(e) => commit(e.target.value)}
+          onBlur={() => setDraft(null)}
           className={`tabular h-9 w-full rounded-md border bg-background px-2.5 text-[15px] font-medium text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${
             changed ? 'border-warn' : 'border-border'
           }`}
@@ -109,14 +124,15 @@ export function OperatorDetail({
   original,
   corpus,
   profile,
+  limits,
+  year,
   amended,
   onAmend,
   onReset,
 }: OperatorDetailProps) {
-  const cap = operator?.capMw ?? 0
   const result = useMemo(
-    () => (operator && operator.offersFca ? costOf(profile, cap) : null),
-    [profile, cap, operator],
+    () => (operator && operator.offersFca ? curtailmentOf(operator, profile, limits, year) : null),
+    [operator, profile, limits, year],
   )
 
   if (!operator || !original) {
@@ -175,15 +191,22 @@ export function OperatorDetail({
               label="Cap"
               value={operator.capMw}
               unit="MW"
-              max={10}
+              max={profile.meta.connectionMw}
               changed={changed('capMw')}
-              onChange={(v) => onAmend({ capMw: v })}
+              onChange={(v) =>
+                // Dropping the ceiling below the firm level would promise more
+                // than the connection allows, so the firm level follows it down.
+                onAmend({
+                  capMw: v,
+                  ...(operator.guaranteedMinimumMw > v ? { guaranteedMinimumMw: v } : {}),
+                })
+              }
             />
             <Field
               label="Guaranteed firm"
               value={operator.guaranteedMinimumMw}
               unit="MW"
-              max={10}
+              max={operator.capMw}
               changed={changed('guaranteedMinimumMw')}
               onChange={(v) => onAmend({ guaranteedMinimumMw: v })}
             />
@@ -281,10 +304,9 @@ export function OperatorDetail({
 
           {result && result.hours === 0 ? (
             <p className="mt-4 text-[13px] leading-relaxed font-medium text-ok">
-              The cap never binds: it sits at or above this site&rsquo;s{' '}
-              {profile.meta.peakMw.toFixed(2)} MW peak, so the connection is flexible on paper
-              and firm in practice. Pull the cap down to find the level where that stops being
-              true.
+              This regime never binds against the site&rsquo;s{' '}
+              {profile.meta.peakMw.toFixed(2)} MW peak: flexible on paper, firm in practice.
+              Pull the cap down to find the level where that stops being true.
             </p>
           ) : null}
 

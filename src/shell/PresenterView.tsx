@@ -42,6 +42,21 @@ export function PresenterView() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Never take a key that belongs to something the presenter is typing in.
+      // Without this, searching for "Regensburg" restarts the scene on the R,
+      // a space in "Bad Toelz" advances it, and the arrow keys move the deck
+      // instead of the caret. Cmd+R has to reach the browser as well.
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      const t = e.target as HTMLElement | null
+      if (
+        t &&
+        (t.isContentEditable ||
+          t.tagName === 'INPUT' ||
+          t.tagName === 'TEXTAREA' ||
+          t.tagName === 'SELECT')
+      )
+        return
+
       if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Spacebar') {
         e.preventDefault()
         next()

@@ -104,6 +104,15 @@ function TimelineInner({
   const draggingRef = useRef(false)
   /** The last level the pointer was over - what a release commits. */
   const latestRef = useRef(capMw)
+  /**
+   * Megawatts between where the line sits and where it was grabbed.
+   *
+   * Without it a press jumps the cap to wherever the pointer landed. The hit
+   * target is 22 px of transparent stroke and the plot is 62.5 px per MW, so
+   * grabbing the top edge of the line and letting go without moving committed
+   * a change of 0.2 MW that the presenter never asked for.
+   */
+  const grabOffsetRef = useRef(0)
 
   const paths = useMemo(() => {
     // Where the battery is discharging the meter sits below what the vehicles
@@ -160,21 +169,21 @@ function TimelineInner({
       e.currentTarget.setPointerCapture(e.pointerId)
       draggingRef.current = true
       setDragging(true)
-      const mw = mwAt(e.clientY)
-      latestRef.current = mw
-      onCapDrag(mw)
+      grabOffsetRef.current = capMw - mwAt(e.clientY)
+      latestRef.current = capMw
     },
-    [mwAt, onCapDrag],
+    [mwAt, capMw],
   )
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<SVGGElement>) => {
       if (!draggingRef.current) return
-      const mw = mwAt(e.clientY)
+      const mw = settle(mwAt(e.clientY) + grabOffsetRef.current)
+      if (mw === latestRef.current) return
       latestRef.current = mw
       onCapDrag(mw)
     },
-    [mwAt, onCapDrag],
+    [mwAt, onCapDrag, settle],
   )
 
   /**
@@ -188,8 +197,10 @@ function TimelineInner({
     if (!draggingRef.current) return
     draggingRef.current = false
     setDragging(false)
-    onCapCommit(latestRef.current)
-  }, [onCapCommit])
+    // A press with no movement is not an edit, and committing one costs a full
+    // re-plan of the year for no change.
+    if (latestRef.current !== capMw) onCapCommit(latestRef.current)
+  }, [onCapCommit, capMw])
 
   /**
    * Up and down are free: the shell's global key handler takes only the arrows

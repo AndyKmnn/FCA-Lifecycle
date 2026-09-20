@@ -40,14 +40,24 @@ export interface Benchmark {
   widened: boolean
 }
 
-/** The share of the set this value beats, from the customer's point of view. */
+/**
+ * The share of the set this value beats, from the customer's point of view.
+ *
+ * Ties count half. Counting only strict wins sounds right and is not: with 362
+ * operators and whole-month connection times, 33 of them sit on exactly 14
+ * months, so an offer *on* the median scored P46 and the median offer in the
+ * whole corpus was announced as "better than 47%". An offer that matches the
+ * market should read as the middle of it.
+ */
 function percentileOf(values: number[], value: number, higherIsBetter: boolean): number {
   if (values.length === 0) return 0.5
   let better = 0
+  let equal = 0
   for (const v of values) {
-    if (higherIsBetter ? value > v : value < v) better++
+    if (v === value) equal++
+    else if (higherIsBetter ? value > v : value < v) better++
   }
-  return better / values.length
+  return (better + equal / 2) / values.length
 }
 
 function median(values: number[]): number {
@@ -105,17 +115,35 @@ export function benchmark(subject: Operator, corpus: Operator[]): Benchmark | nu
   }
 }
 
-/** The one line the customer repeats back to the operator. */
+/**
+ * The one line the customer repeats back to the operator.
+ *
+ * Every branch states the same thing - the share of comparable offers this one
+ * beats. The weak branch used to say "Bottom 39%", which is the share it beats
+ * read as the share it sits within: an offer better than 39% of the market is
+ * in the bottom 61%, not the bottom 39%. Two readings of one number in three
+ * branches is how that kind of mistake survives review.
+ */
 export function verdict(b: Benchmark): { tone: 'ok' | 'warn' | 'bad'; headline: string } {
   const pct = Math.round(b.overall * 100)
-  if (pct >= 70)
-    return { tone: 'ok', headline: `Better than ${pct}% of comparable offers.` }
+  if (pct >= 70) return { tone: 'ok', headline: `Better than ${pct}% of comparable offers.` }
   if (pct >= 40)
     return { tone: 'warn', headline: `Middling: better than ${pct}% of comparable offers.` }
-  return { tone: 'bad', headline: `Bottom ${Math.max(1, pct)}%: most comparable sites do better.` }
+  return { tone: 'bad', headline: `Weak: better than only ${pct}% of comparable offers.` }
 }
 
-/** The single dimension most worth pushing back on. */
-export function weakest(b: Benchmark): Dimension {
-  return b.dimensions.reduce((a, d) => (d.percentile < a.percentile ? d : a))
+/**
+ * The single dimension most worth pushing back on.
+ *
+ * Only terms that are actually behind the market qualify. The lowest percentile
+ * on its own can be a term sitting exactly on the median once ties are
+ * frequent, and telling a presenter to push for an improvement of nought is
+ * worse than saying nothing.
+ */
+export function weakest(b: Benchmark): Dimension | null {
+  const behind = b.dimensions.filter(
+    (d) => d.percentile < 0.5 && Math.abs(d.value - d.median) > 1e-9,
+  )
+  if (behind.length === 0) return null
+  return behind.reduce((a, d) => (d.percentile < a.percentile ? d : a))
 }

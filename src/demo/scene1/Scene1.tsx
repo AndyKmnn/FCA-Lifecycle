@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { Profile, Regions } from '../../data'
-import { loadProfile, loadRegions } from '../../data'
+import type { Limits, Profile, Regions } from '../../data'
+import { loadLimits, loadProfile, loadRegions } from '../../data'
 import { Button, CHART, Surface } from '../../design'
 import type { SceneProps } from '../../shell/types'
 import { UploadStrip } from './UploadStrip'
@@ -42,15 +42,16 @@ export default function Scene1({ onAdvance }: SceneProps) {
   const [data, setData] = useState<{
     profile: Profile
     regions: Regions
+    limits: Limits
     file: OperatorFile
   } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let live = true
-    Promise.all([loadProfile(), loadRegions(), loadOperators()])
-      .then(([profile, regions, file]) => {
-        if (live) setData({ profile, regions, file })
+    Promise.all([loadProfile(), loadRegions(), loadLimits(), loadOperators()])
+      .then(([profile, regions, limits, file]) => {
+        if (live) setData({ profile, regions, limits, file })
       })
       .catch((e: unknown) => {
         if (live) setError(e instanceof Error ? e.message : String(e))
@@ -73,11 +74,13 @@ export default function Scene1({ onAdvance }: SceneProps) {
 function Explorer({
   profile,
   regions,
+  limits,
   file,
   onAdvance,
 }: {
   profile: Profile
   regions: Regions
+  limits: Limits
   file: OperatorFile
   onAdvance: () => void
 }) {
@@ -250,6 +253,8 @@ function Explorer({
               operator={selected}
               original={original}
               corpus={projected}
+              limits={limits}
+              year={year}
               profile={profile}
               amended={selectedId ? amendments.has(selectedId) : false}
               onAmend={amend}

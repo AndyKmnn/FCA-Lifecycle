@@ -85,7 +85,13 @@
  * what the document looks like.
  */
 @media print {
-  #root {
+  /*
+   * Only while a document is open. The rule used to be unconditional, so
+   * Cmd+P anywhere else in the app - the landing page, the team page, the
+   * demo with no term sheet up - printed a blank sheet, because the whole
+   * application lives in #root and the portal is the only thing outside it.
+   */
+  body.document-open #root {
     display: none !important;
   }
 

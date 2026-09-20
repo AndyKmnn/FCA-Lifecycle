@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState } from 'react'
+import { memo, useCallback, useRef } from 'react'
 import { Button, Chip, Surface } from '../../design'
 import { hhmm, longDate } from './format'
 import { DAYS_PER_YEAR, type DayPlan } from './replan'
@@ -66,7 +66,12 @@ export function TopBar({
   canPrint,
 }: TopBarProps) {
   const trackRef = useRef<HTMLDivElement>(null)
-  const [scrubbing, setScrubbing] = useState(false)
+  /**
+   * A ref, not state. Pointer moves arrive faster than React commits, so a
+   * handler closed over a state flag from the render before the press drops
+   * the opening moves - the same fault the cap handle had, and the same fix.
+   */
+  const scrubbingRef = useRef(false)
 
   /**
    * The track is a plain element, so its bounding rect already carries the
@@ -75,14 +80,19 @@ export function TopBar({
   const dayAt = useCallback((clientX: number) => {
     const rect = trackRef.current?.getBoundingClientRect()
     if (!rect || rect.width === 0) return 0
+    // Every marker on this track - the thumb, the constrained ticks, the jump
+    // diamonds - is positioned at day / DAYS_PER_YEAR. Mapping a click back
+    // through DAYS_PER_YEAR - 1 put the two scales half a day apart, so from
+    // roughly July on, clicking a tick selected the day before it.
     const share = (clientX - rect.left) / rect.width
-    return Math.round(share * (DAYS_PER_YEAR - 1))
+    return Math.floor(share * DAYS_PER_YEAR)
   }, [])
 
   const onTrackDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.button !== 0) return
       e.currentTarget.setPointerCapture(e.pointerId)
-      setScrubbing(true)
+      scrubbingRef.current = true
       onSelectDay(dayAt(e.clientX))
     },
     [dayAt, onSelectDay],
@@ -90,15 +100,18 @@ export function TopBar({
 
   const onTrackMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!scrubbing) return
+      if (!scrubbingRef.current) return
       onSelectDay(dayAt(e.clientX))
     },
-    [scrubbing, dayAt, onSelectDay],
+    [dayAt, onSelectDay],
   )
 
   const onTrackUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    setScrubbing(false)
-    e.currentTarget.releasePointerCapture(e.pointerId)
+    scrubbingRef.current = false
+    // After a pointercancel the pointer is gone and releasing an unknown id
+    // throws NotFoundError.
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId))
+      e.currentTarget.releasePointerCapture(e.pointerId)
   }, [])
 
   const win = today.windows[0]

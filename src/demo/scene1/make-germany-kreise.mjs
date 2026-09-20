@@ -280,8 +280,12 @@ const operators = out.map((k) => {
       : limitType === 'dynamic' ? 'seasonal schedule'
       : limitType === 'static' ? 'fixed, no notice'
       : 'not offered',
-    maxCurtailmentHours: limitType === 'none' ? 0 : Math.round(between(r, 200, 1200, 0) / 10) * 10,
-    compensationAboveCap: limitType === 'none' ? false : r() < 0.38,
+    // Generated even where nothing is offered yet, for the same reason the cap
+    // is: the timeline needs a ceiling for this operator to arrive at when it
+    // starts offering. Zeroing them here left 72 operators writing a cap with a
+    // nought-hour curtailment ceiling the moment they switched on.
+    maxCurtailmentHours: Math.round(between(r, 200, 1200, 0) / 10) * 10,
+    compensationAboveCap: r() < 0.38,
     bkzEurPerKw: Math.round(between(r, 60, 190, 0)),
     voltageLevel: pick(r, ['MS', 'MS', 'MS', 'HS/MS', 'HS/MS', 'HS']),
     headroomMw: between(r, k.urban ? 0.4 : 1.2, k.urban ? 9 : 26),
@@ -301,8 +305,13 @@ const operators = out.map((k) => {
  * terms for the same connection and the demo would fall apart the moment
  * anybody compared them. So the home operator is read from the scenario files
  * rather than generated, and the rest of the country is generated around it.
+ *
+ * It is Pfaffenhofen, not Freising. The site coordinate in regions.json
+ * (11.7 E, 48.6 N) projects to a point that falls inside Pfaffenhofen an der
+ * Ilm - which is where the Hallertau is - so ringing Freising drew the home
+ * outline one Kreis east of the dot marking the site.
  */
-const HOME_ID = 'BY-freising'
+const HOME_ID = 'BY-pfaffenhofen'
 const limits = JSON.parse(fs.readFileSync('public/data/limits.json', 'utf8'))
 const districts = JSON.parse(fs.readFileSync('public/data/districts.json', 'utf8'))
 const homeDistrict = districts.districts.find((d) => d.limitType === 'fullyDynamic')
@@ -318,6 +327,11 @@ Object.assign(home, {
   noticePeriod: limits.meta.noticePeriod,
   digitalisation: 88,
   fcaFromYear: 2025,
+  // Rolled against the digitalisation this operator had before it was pinned,
+  // and the boost applies below 45 - so the most advanced operator in the
+  // country was also the fastest-improving, and went 88 -> 100 in one year
+  // while its neighbours moved three to nine points.
+  digiGrowth: 3.5,
 })
 
 /* ---------------------------------------------------------------- the nodes
@@ -427,9 +441,9 @@ if (homeNode) {
   // Renaming one of them to Ost collides with whichever already held it, so the
   // whole Kreis is renamed rather than just the pinned node.
   homeNodes.forEach((n, i) => {
-    n.name = `${homeNode.kreisId.split('-')[1].replace(/^./, (c) => c.toUpperCase())}-${NODE_SUFFIX[i === 0 ? 1 : i === 1 ? 0 : i]}`
+    n.name = `${n.name.split('-')[0]}-${NODE_SUFFIX[i === 0 ? 1 : i === 1 ? 0 : i]}`
   })
-  homeNode.name = 'Freising-Ost'
+  homeNode.name = 'Pfaffenhofen-Ost'
   homeNode.voltageLevel = '110/20 kV'
   homeNode.headroomMw = 14.2
   homeNode.queue = [
